@@ -1,7 +1,6 @@
 # athena_testbench
 Testing / Development environment for AWS Athena queries
 
- Dockerized [PrestoDB](https://prestodb.io/)
 
 ## Dockerised presto and postgres
 
@@ -17,7 +16,6 @@ So you only have to `docker-compose up` and use the [Presto CLI](https://prestod
 
 The postgres database is exposing it's default port (5432) so this can be used to populate the database. In spite of what presto might tell you it exists with the user presto and default schema 'public'
 
-`psql -U presto -d postgres`
 
 ### Useful docker commands
 
