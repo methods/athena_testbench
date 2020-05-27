@@ -157,7 +157,6 @@ def test_build_sql_interpolates_single_insert_w_trailing_statement_and_comma(tmp
     assert returned_sql_strs == expected_sql_strs
 
 
-@pytest.mark.skip()
 def test_build_sql_interpolates_multiple_inserts_and_writes(tmp_path):
     """
     Assert build_sql constructs file given template file referencing multiple
@@ -169,7 +168,7 @@ def test_build_sql_interpolates_multiple_inserts_and_writes(tmp_path):
         "   y AS j",
         "FROM some_table"
     ]
-    inserted_sql_0_filename = "inserted_sql.sql"
+    inserted_sql_0_filename = "inserted_sql_0.sql"
     inserted_sql_0_filepath = f"{tmp_path}/{inserted_sql_0_filename}"
 
     inserted_sql_strs_1 = [
@@ -178,7 +177,7 @@ def test_build_sql_interpolates_multiple_inserts_and_writes(tmp_path):
         "   the_other AS the_cats_mother",
         "FROM some_other_table"
     ]
-    inserted_sql_1_filename = "inserted_sql.sql"
+    inserted_sql_1_filename = "inserted_sql_1.sql"
     inserted_sql_1_filepath = f"{tmp_path}/{inserted_sql_1_filename}"
 
     inserted_sql_strs_2 = [
@@ -187,12 +186,14 @@ def test_build_sql_interpolates_multiple_inserts_and_writes(tmp_path):
         "   dick AS harry",
         "FROM yet_another_table"
     ]
-    inserted_sql_2_filename = "inserted_sql.sql"
+    inserted_sql_2_filename = "inserted_sql_2.sql"
     inserted_sql_2_filepath = f"{tmp_path}/{inserted_sql_2_filename}"
 
 
     template_sql_strs = [
-        f"WITH X AS @{inserted_sql_filename},",
+        f"WITH X AS @{inserted_sql_0_filename},",
+        f"WITH Y AS @{inserted_sql_1_filename},",
+        f"WITH Z AS @{inserted_sql_2_filename},",
         "SELECT some_stuff FROM somewhere;"
     ]
     template_sql_filename = "template_sql.sql"
@@ -200,12 +201,20 @@ def test_build_sql_interpolates_multiple_inserts_and_writes(tmp_path):
 
     expected_sql_strs = [
         f"WITH X AS",
-        *inserted_sql_strs,
-        ",",
+         *inserted_sql_strs_0[:-1],
+        f"{inserted_sql_strs_0[-1]},",
+        f"WITH Y AS",
+         *inserted_sql_strs_1[:-1],
+        f"{inserted_sql_strs_1[-1]},",
+        f"WITH Z AS",
+         *inserted_sql_strs_2[:-1],
+        f"{inserted_sql_strs_2[-1]},",
         "SELECT some_stuff FROM somewhere;"
     ]
 
-    string_sequence_to_file(inserted_sql_strs_1, inserted_sql_1_filename)
+    string_sequence_to_file(inserted_sql_strs_0, inserted_sql_0_filepath)
+    string_sequence_to_file(inserted_sql_strs_1, inserted_sql_1_filepath)
+    string_sequence_to_file(inserted_sql_strs_2, inserted_sql_2_filepath)
     string_sequence_to_file(template_sql_strs, template_sql_filepath)
 
     returned_sql_filename ="returned_sql.sql"

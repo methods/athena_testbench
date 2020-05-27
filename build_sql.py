@@ -69,10 +69,3 @@ def build_sql(template_file, output_file, insert_delimiter='@') -> None:
 
     with open(output_file, 'w') as f:
             f.write("\n".join(output_lines))
-
-
-
-
-
-
-    # open and read inerted files
