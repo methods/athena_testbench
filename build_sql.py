@@ -5,7 +5,7 @@ from typing import Sequence
 
 
 def file_to_lines(filepath: str,
-                  dir_if_not_in_filepath: str or None = None) -> list:
+                  dir_if_not_in_filepath: str or None = None, prefix: str = '') -> list:
     """
     Return text file at filepath as list of lines. If filepath does not contain
     a directory, then it must be supplied as dir_if_not_in_filepath, or an
@@ -23,7 +23,8 @@ def file_to_lines(filepath: str,
         filepath = os.path.join(dir_if_not_in_filepath, filepath)
 
     with open(filepath, 'r') as f:
-        return f.read().splitlines()
+        lines = f.read().splitlines()
+        return [f'{prefix}{line}' for line in lines]
 
 
 def build_sql(template_file: str,
@@ -99,7 +100,9 @@ def build_sql(template_file: str,
 
             # even index statements are files to insert
             if j % 2 == 0:
-                output_lines.extend(file_to_lines(statement, working_dir))
+                output_lines.extend(
+                    file_to_lines(statement, working_dir, '  ')
+                )
                 continue
 
             # odd index statements are interstitial statements, either suffixes
