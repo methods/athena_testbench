@@ -81,7 +81,7 @@ def build_sql(template_file: str,
         if n_delimiters % 2 != 0:
             raise ValueError(
             f"Unbalanced insert statement found on line {i} of {template_file}"
-            " - insert statements must be bookended by {insert_delimiter}"
+            f" - insert statements must be bookended by {insert_delimiter}"
         )
 
         line_split_on_delimiter = line.split(insert_delimiter)
