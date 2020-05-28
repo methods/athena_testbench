@@ -1,3 +1,4 @@
+import argparse
 import os
 import re
 
@@ -127,3 +128,11 @@ def build_sql(template_file: str,
 
     with open(output_file, 'w') as f:
         f.write("\n".join(output_lines))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('template_file', type=str)
+    parser.add_argument('output_file', type=str)
+    args = parser.parse_args()
+    build_sql(args.template_file, args.output_file)
