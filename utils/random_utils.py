@@ -31,6 +31,10 @@ def random_covid_date(start="01/03/2020", end="27/05/2000", input_format='%d/%m/
     random_date = str_time_prop(start, end, prop, input_format)
     return time.strftime(output_format, random_date)
 
+def random_time_in_last_n_days(n=30, format="%Y-%m-%d %H:%M:%S"):
+    now_time = time.time()
+    rand_time = now_time - random.randint(0, 1000 * 60 * 60 * 24 * n)
+    return time.strftime(format, time.localtime(rand_time))
 
 def random_nhs_number():
     return str(random.randrange(1000000000, 9999999999))

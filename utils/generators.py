@@ -5,7 +5,8 @@ from datetime import datetime
 from faker import Faker
 import random
 from utils.postcodes import PostcodeGenerator
-from utils.random_utils import random_covid_date, random_date_of_birth, random_nhs_number
+from utils.random_utils import random_covid_date, random_date_of_birth, random_nhs_number, random_time_in_last_n_days
+
 fake = Faker()
 postcodes = PostcodeGenerator()
 
@@ -35,24 +36,26 @@ def generate_nhs_clean_entry():
 
 
 def generate_ivr_clean_entry():
+    correct_nhs = random.choice([True, False])
+
     entry = {
-        'ivr_nhs_number': random_nhs_number(),
+        'ivr_nhs_number': f'{random_nhs_number()}' if correct_nhs else f'x-{random_nhs_number()}',
         'ivr_dob': random_date_of_birth(),
         'ivr_postcode': postcodes.get_postcode(),
         'ivr_postal_code_verified': random.choice(['yes', 'no']),
-        'ivr_delivery_supplies': 1,
-        'ivr_customer_calling_number': 1,
-        'ivr_current_item_id': 1,
-        'ivr_transfer': 1,
-        'ivr_fallback_time': 1,
-        'ivr_nhs_known': 1,
+        'ivr_delivery_supplies': random.choice(['yes','no']),
+        'ivr_customer_calling_number': f'{fake.phone_number()}',
+        'ivr_current_item_id': '17' if correct_nhs else '5',
+        'ivr_transfer': '',
+        'ivr_fallback_time': '',
+        'ivr_nhs_known': 'TRUE' if correct_nhs else 'FALSE',
         'ivr_contact_id': 1,
-        'ivr_preferred_phone_number': 1,
-        'ivr_phone_number_calls': 1,
-        'ivr_have_help': 1,
-        'ivr_carry_supplies': 1,
-        'ivr_call_timestamp': 1,
-        'ivr_unmet_needs': 1,
+        'ivr_preferred_phone_number': fake.phone_number(),
+        'ivr_phone_number_calls': fake.phone_number(),
+        'ivr_have_help': random.choice(['TRUE','FALSE']),
+        'ivr_carry_supplies': random.choice(['TRUE','FALSE']),
+        'ivr_call_timestamp': random_time_in_last_n_days(n=60),
+        'ivr_unmet_needs': 'NA',
     }
     return entry
 
