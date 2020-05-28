@@ -3,6 +3,7 @@ import re
 
 from typing import Sequence
 
+SNIPPET_LINE="/* START SNIPPET */"
 
 def file_to_lines(filepath: str,
                   dir_if_not_in_filepath: str or None = None, prefix: str = '') -> list:
@@ -26,6 +27,15 @@ def file_to_lines(filepath: str,
         lines = f.read().splitlines()
         return [f'{prefix}{line}' for line in lines]
 
+def file_to_snippet(filepath: str,
+                  dir_if_not_in_filepath: str or None = None, prefix: str = '') -> list:
+    lines = file_to_lines(filepath=filepath, dir_if_not_in_filepath=dir_if_not_in_filepath, prefix='')
+
+    try:
+        position_of_snippet_line = lines.index(SNIPPET_LINE)
+        return [f'{prefix}{line}' for line in lines[position_of_snippet_line + 1:]]
+    except ValueError:
+        return [f'{prefix}{line}' for line in lines]
 
 def build_sql(template_file: str,
               output_file: str,
@@ -73,6 +83,9 @@ def build_sql(template_file: str,
 
     for i, line in enumerate(file_to_lines(template_file, working_dir)):
 
+        if SNIPPET_LINE in line:
+            continue
+
         n_delimiters = len(re.findall(insert_delimiter, line))
 
         if n_delimiters == 0:
@@ -101,7 +114,7 @@ def build_sql(template_file: str,
             # even index statements are files to insert
             if j % 2 == 0:
                 output_lines.extend(
-                    file_to_lines(statement, working_dir, '  ')
+                    file_to_snippet(statement, working_dir, '  ')
                 )
                 continue
 

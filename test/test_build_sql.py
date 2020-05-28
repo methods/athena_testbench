@@ -27,7 +27,6 @@ def file_to_string_sequence(filepath: str) -> list:
 
 # ===== CASES ===== #
 
-
 def test_build_sql_single_insert_trailing_comma(tmp_path: pytest.fixture):
     """
     Assert build_sql constructs file given template file referencing a single
@@ -329,6 +328,35 @@ def test_build_sql_raises_when_inserts_not_bookended(tmp_path: pytest.fixture):
         module_under_test.build_sql(template_file=template_sql_filepath,
                                     output_file="doesnt_matter_what_is_here")
 
+def test_file_to_snippet_returns_full_file_if_no_snippet_line(tmp_path: pytest.fixture):
+    file_without_snippet = [
+        "a",
+        "b",
+        "c"
+    ]
+    string_sequence_to_file(file_without_snippet, f'{tmp_path}/tmp.sql')
+
+    returned_lines = module_under_test.file_to_snippet('tmp.sql', dir_if_not_in_filepath=tmp_path, prefix='')
+
+    assert file_without_snippet == returned_lines
+
+
+
+def test_file_to_snippet_returns_lines_after_snippet_if_snippet_line(tmp_path: pytest.fixture):
+    file_without_snippet = [
+        "a",
+        "b",
+        module_under_test.SNIPPET_LINE,
+        "c",
+        "d"
+    ]
+    string_sequence_to_file(file_without_snippet, f'{tmp_path}/tmp.sql')
+
+    returned_lines = module_under_test.file_to_snippet('tmp.sql', dir_if_not_in_filepath=tmp_path, prefix='')
+
+    assert ["c", "d"] == returned_lines
+
+
 def test_build_sql_multiple_inserts_cascading(tmp_path: pytest.fixture):
     """
     Assert cascading statements do not break dependencies while inserting minimal code.
@@ -345,10 +373,10 @@ def test_build_sql_multiple_inserts_cascading(tmp_path: pytest.fixture):
     # SECTION 2 may depend on section 1
     testable_sql_2 = [
         "WITH section_1 AS @{section_1_filename}@",
-        "--START SELECT--",
+        module_under_test.SNIPPET_LINE,
         "SELECT",
-        "   values",
-        "FROM table_2 "
+        "  values",
+        "FROM table_2 ",
         "JOIN section_1 ON some_join"
     ]
     section_2_filename = "section_2.sql"
@@ -356,20 +384,20 @@ def test_build_sql_multiple_inserts_cascading(tmp_path: pytest.fixture):
 
     testable_sql_3 = [
         "WITH section_1 AS @{section_1_filename}@",
-        "--START SELECT--",
+        module_under_test.SNIPPET_LINE,
         "SELECT",
-        "   values",
-        "FROM table_3 "
+        "  values",
+        "FROM table_3 ",
         "JOIN section_1 ON some_join"
     ]
     section_3_filename = "section_3.sql"
     section_3_filepath = f"{tmp_path}/{section_3_filename}"
 
     template_sql_strs = [
-        f"WITH section_1 AS @{section_1_filename}@,",
-        f"section_2 AS @{section_2_filename}@,",
-        f"section_3 AS @{section_3_filename}@,",
-        "--START SELECT--",
+        f"WITH section_1 AS (@{section_1_filename}@),",
+        f"section_2 AS (@{section_2_filename}@),",
+        f"section_3 AS (@{section_3_filename}@),",
+        module_under_test.SNIPPET_LINE,
         "SELECT some_stuff FROM somewhere;"
     ]
     template_sql_filename = "template_sql.sql"
@@ -377,20 +405,21 @@ def test_build_sql_multiple_inserts_cascading(tmp_path: pytest.fixture):
 
     expected_sql_strs = [
         "WITH section_1 AS (",
-        "SELECT",
-        "   value",
-        "FROM table_1),",
+        "  SELECT",
+        "    value",
+        "  FROM table_1",
+        "),",
         "section_2 AS (",
-        "SELECT",
-        "   values",
-        "FROM table_2 "
-        "JOIN section_1 ON some_join"
+        "  SELECT",
+        "    values",
+        "  FROM table_2 ",
+        "  JOIN section_1 ON some_join",
         "),",
         "section_3 AS (",
-        "SELECT",
-        "   values",
-        "FROM table_3 "
-        "JOIN section_1 ON some_join"
+        "  SELECT",
+        "    values",
+        "  FROM table_3 ",
+        "  JOIN section_1 ON some_join",
         "),",
         "SELECT some_stuff FROM somewhere;"
     ]
