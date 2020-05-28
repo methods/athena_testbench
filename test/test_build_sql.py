@@ -317,8 +317,7 @@ def test_build_sql_raises_when_inserts_not_bookended(tmp_path: pytest.fixture):
     """
 
     template_sql_strs = [
-        f"WITH X AS @doesnt_matter_what_is_here,",
-        "SELECT some_stuff FROM somewhere;"
+        "WITH X AS @doesnt_matter_what_is_here,"
     ]
     template_sql_filename = "template_sql.sql"
     template_sql_filepath = f"{tmp_path}/{template_sql_filename}"
