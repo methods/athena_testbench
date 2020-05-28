@@ -1,8 +1,15 @@
 import os
-import re
+
+from typing import Sequence
+
 
 def file_to_lines(filepath: str,
                   dir_if_not_in_filepath: str or None = None) -> list:
+    """
+    Return text file at filepath as list of lines. If filepath does not contain
+    a directory, then it must be supplied as dir_if_not_in_filepath, or an
+    exception will be thrown.
+    """
     split_filepath = os.path.split(filepath)
 
     if split_filepath[0] == '':
@@ -14,22 +21,50 @@ def file_to_lines(filepath: str,
 
         filepath = os.path.join(dir_if_not_in_filepath, filepath)
 
-    with open(filepath,'r') as f:
+    with open(filepath, 'r') as f:
         return f.read().splitlines()
 
 
-def build_sql(template_file, output_file, insert_delimiter='@') -> None:
+def build_sql(template_file: str,
+              output_file: str,
+              insert_delimiter: str = '@',
+              suffix_start_chars: Sequence = (',')) -> None:
     """
-    NB no spaces in paths for inserted files in template file.
+    Assemble sql script from template_file and write to output_file. Statements
+    bounded by the insert_delimiter are assumed to point at some other
+    sql script to interpolate in.
 
-    Assume insert files are all in same dir as template file unless stated
-    otherwise
+    e.g., using the default insert_delimiter, this will insert the contents of
+    some_sql_script's 1 to 3 between the @ symbols:
 
-    trailing commas and trailing statemetns (sep by whitespace) are handled
+        WITH X AS @some_sql_script_1.sql@,
+        WITH Y AS @some_sql_script_2.sql@,
+        WITH Z AS @some_sql_script_3.sql@,
+        "SELECT some_stuff FROM somewhere;
+
+    Files referenced in between the insert_delimiters can either be full
+    filepaths, or path-less filenames. If path-less filenames, they will be
+    presumed to be in the same directory as the template_file.
+
+    Statements immediately preceeding an insert statement will be placed on a
+    a new line of the compiled script, UNLESS they start with one of the
+    suffix_start_chars, in which case they will be appended to the last line
+    of the inserted script (e.g. by default trailing comma will be preserved
+    as line terminators, rather than placed on new lines).
     """
     working_dir = os.path.split(template_file)[0]
 
     output_lines = []
+
+    def _suffix_or_newline(statement: str) -> None:
+        """
+        if statement starts with any of the suffix_start_chars its a suffix,
+        otherwise it goes in as a newline.
+        """
+        if any(statement.startswith(char) for char in suffix_start_chars):
+            output_lines[-1] += statement
+        else:
+            output_lines.append(statement)
 
     for line in file_to_lines(template_file):
 
@@ -37,35 +72,30 @@ def build_sql(template_file, output_file, insert_delimiter='@') -> None:
             output_lines.append(line)
             continue
 
-        line_split_on_delimiter = [statement.strip() for statement in
-                                   line.split(insert_delimiter)]
+        line_split_on_delimiter = line.split(insert_delimiter)
 
-        leading_statment = line_split_on_delimiter[0]
-        if leading_statment != '':
-            output_lines.append(leading_statment)
+        leading_statement = line_split_on_delimiter.pop(0)
+        trailing_statement = line_split_on_delimiter.pop()
 
-        files_to_insert = line_split_on_delimiter[1:]
+        if leading_statement != '':
+            output_lines.append(leading_statement)
 
-        # last file to insert may have trailing content after whitespace
-        end_sequence_of_line = files_to_insert[-1].split(' ', 1)
-        files_to_insert[-1] = end_sequence_of_line[0]
+        for i, statement in enumerate(line_split_on_delimiter):
 
-        for file_to_insert in files_to_insert:
+            if statement == '':
+                continue
 
-            # handle trailing commas
-            if file_to_insert.endswith(','):
-                lines_to_insert = file_to_lines(file_to_insert[:-1],
-                                                working_dir)
-                lines_to_insert[-1] += ','
+            # even index statements are files to insert
+            if i % 2 == 0:
+                output_lines.extend(file_to_lines(statement, working_dir))
+                continue
 
-            else:
-                lines_to_insert = file_to_lines(file_to_insert, working_dir)
+            # odd index statements are interstitial statements, either
+            # or suffixes
+            _suffix_or_newline(statement)
 
-            output_lines.extend(lines_to_insert)
-
-        if len(end_sequence_of_line) != 1:
-            trailing_statement = end_sequence_of_line[1]
-            output_lines.append(trailing_statement)
+        if trailing_statement != '':
+            _suffix_or_newline(trailing_statement)
 
     with open(output_file, 'w') as f:
-            f.write("\n".join(output_lines))
+        f.write("\n".join(output_lines))
