@@ -18,6 +18,9 @@ The postgres database is exposing it's default port (5432) so this can be used t
 
 
 ### Useful docker commands
+The docs
+
+https://docs.docker.com/engine/reference/commandline/docker/
 
 List docker containers
 ```
@@ -36,4 +39,7 @@ docker exec -it athena_testbench_presto_1 /bin/bash
 
 ## References
 
+* [Presto Docs](https://prestodb.io/docs/current/)
+* Python presto library - https://github.com/prestodb/presto-python-client
+* Python postgresql library - https://github.com/tlocke/pg8000
 * https://github.com/Jimexist/docker-presto

@@ -1,0 +1,6 @@
+# prod requirements
+-r requirements.txt
+
+# test requirements
+pytest==5.4.2
+flake8==3.8.2
