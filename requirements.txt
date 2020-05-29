@@ -1,0 +1,2 @@
+pg8000==1.15.2
+presto-python-client==0.7.0

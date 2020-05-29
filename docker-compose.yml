@@ -1,6 +1,6 @@
 ---
 # brings up the dependencies
-version: '2'
+version: "2"
 services:
   presto:
     build: .
@@ -14,8 +14,8 @@ services:
   postgresql:
     image: postgres
     environment:
-      POSTGRES_USER: 'presto'
-      POSTGRES_PASSWORD: '9bee2c3975024292eff5829526722ac2'
-      POSTGRES_DB: 'postgres'
+      POSTGRES_USER: "presto"
+      POSTGRES_PASSWORD: "9bee2c3975024292eff5829526722ac2"
+      POSTGRES_DB: "postgres"
     ports:
-      - "5432:5432"
+      - "5433:5432"

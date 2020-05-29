@@ -6,7 +6,9 @@ def pg_connect():
     return pg.connect(
         user="presto",
         database="postgres",
-        password="9bee2c3975024292eff5829526722ac2")
+        password="9bee2c3975024292eff5829526722ac2",
+        port=5433
+    )
 
 
 def presto_connect():

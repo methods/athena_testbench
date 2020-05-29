@@ -4,7 +4,15 @@ from utils.ScenarioBuilder import ScenarioBuilder
 from utils.connections import presto_connect
 
 
-def test_latest_submission_with_multiple_ivr_entries():
+@pytest.fixture()
+def scenario_builder():
+    scenario_builder = ScenarioBuilder()
+    scenario_builder.reset()
+    yield scenario_builder
+    scenario_builder.reset()
+
+
+def test_latest_submission_with_multiple_ivr_entries(scenario_builder):
     # GIVEN A SCENARIO WITH KNOWN LA FEEDBACK
     table_schema = {
         'provenance': 'TEXT',
@@ -16,11 +24,9 @@ def test_latest_submission_with_multiple_ivr_entries():
         'phone_number_calls': 'TEXT',
         'phone_number_texts': 'TEXT'
     }
-    scenario_builder = ScenarioBuilder()
-    scenario_builder.reset()
     scenario_builder.build_arbitrary_table("all_submissions", table_schema)
     scenario_builder.insert_into_arbitrary_table(
-        "all_submissions", 
+        "all_submissions",
         {
             'provenance': 'IVR',
             'nhs_number': '123',
@@ -33,7 +39,7 @@ def test_latest_submission_with_multiple_ivr_entries():
         }
     )
     scenario_builder.insert_into_arbitrary_table(
-        "all_submissions", 
+        "all_submissions",
         {
             'provenance': 'IVR',
             'nhs_number': '123',
@@ -46,7 +52,7 @@ def test_latest_submission_with_multiple_ivr_entries():
         }
     )
     scenario_builder.insert_into_arbitrary_table(
-        "all_submissions", 
+        "all_submissions",
         {
             'provenance': 'IVR',
             'nhs_number': '123',
@@ -59,7 +65,7 @@ def test_latest_submission_with_multiple_ivr_entries():
         }
     )
     scenario_builder.insert_into_arbitrary_table(
-        "all_submissions", 
+        "all_submissions",
         {
             'provenance': 'IVR',
             'nhs_number': '123',
@@ -79,7 +85,7 @@ def test_latest_submission_with_multiple_ivr_entries():
     cur = con.cursor()
     cur.execute(query)
     rows = cur.fetchall()
-    
+
     assert len(rows) == 1
     assert rows[0][4] == ['EXPECTED_ROW']
 

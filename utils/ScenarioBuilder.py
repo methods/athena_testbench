@@ -1,8 +1,8 @@
+import itertools
 import random
-
-from utils.connections import pg_connect
 import pg8000
 
+from utils.connections import pg_connect
 from utils.generators import generate_nhs_clean_entry, generate_ivr_clean_entry, generate_web_clean_entry, \
     generate_raw_la_outcome
 from utils.random_utils import random_nhs_number
@@ -10,6 +10,7 @@ from utils.random_utils import random_nhs_number
 
 class ScenarioBuilder:
     nhs_number_list = []
+    arbitrary_tables = []
 
     def _reset_nhs_data(self, con: pg8000.Connection):
         create_command = f'CREATE TABLE IF NOT EXISTS "nhs_clean_staging" (' \
@@ -33,6 +34,7 @@ class ScenarioBuilder:
             f'nhs_inception_date TEXT)'
         con.run(create_command)
         con.run('TRUNCATE "nhs_clean_staging"')
+        con.commit()
 
     def _reset_ivr_data(self, con: pg8000.Connection):
         create_command = f'CREATE TABLE IF NOT EXISTS "ivr_clean_staging" (' \
@@ -55,6 +57,7 @@ class ScenarioBuilder:
             f'ivr_unmet_needs TEXT)'
         con.run(create_command)
         con.run('TRUNCATE "ivr_clean_staging"')
+        con.commit()
 
     def _reset_web_data(self, con: pg8000.Connection):
         create_command = f'CREATE TABLE IF NOT EXISTS "web_clean_staging" (' \
@@ -90,6 +93,7 @@ class ScenarioBuilder:
             f'created_at NUMERIC)'
         con.run(create_command)
         con.run('TRUNCATE "web_clean_staging"')
+        con.commit()
 
     def _reset_la_feedback_data(self, con: pg8000.Connection):
         create_command = f'CREATE TABLE IF NOT EXISTS "raw_la_outcomes_staging" (' \
@@ -116,6 +120,7 @@ class ScenarioBuilder:
             f'inputoutcomecomments TEXT)'
         con.run(create_command)
         con.run('TRUNCATE "raw_la_outcomes_staging"')
+        con.commit()
 
     def get_insert_command(self, table_name, record):
         fields = ','.join([f'"{key}"' for key in record])
@@ -132,11 +137,17 @@ class ScenarioBuilder:
             )
             con.run(create_command)
             con.run(f'TRUNCATE "{table_name}"')
+            con.commit()
+            self.arbitrary_tables.append(table_name)
 
     def insert_into_arbitrary_table(self, table_name: str, record: dict):
         with pg_connect() as con:
             insert_command = self.get_insert_command(table_name, record)
             con.run(insert_command)
+
+    def drop_arbitrary_tables(self, con: pg8000.Connection):
+        for table in self.arbitrary_tables:
+                con.run(f"DROP TABLE IF EXISTS {table}")
 
     def reset(self):
         with pg_connect() as con:
@@ -144,6 +155,7 @@ class ScenarioBuilder:
             self._reset_ivr_data(con)
             self._reset_web_data(con)
             self._reset_la_feedback_data(con)
+            self.drop_arbitrary_tables(con)
             con.commit()
 
     def insert_random_nhs_records(self, count=100):
@@ -195,3 +207,18 @@ class ScenarioBuilder:
             command = self.get_insert_command('raw_la_outcomes_staging', entry)
             con.run(command)
             con.commit()
+
+    def list_postgres_tables(self) -> list:
+        """
+        List all tables in postgres db.
+        """
+        with pg_connect().cursor() as cursor:
+            cursor.execute(
+                f"""
+                SELECT * FROM information_schema.tables
+                """
+            )
+            tables = cursor.fetchall()
+            return list(itertools.chain(*tables))
+
+
