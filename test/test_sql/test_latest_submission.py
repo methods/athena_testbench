@@ -12,8 +12,7 @@ def scenario_builder():
     scenario_builder.reset()
 
 
-def test_latest_submission_with_multiple_ivr_entries(scenario_builder):
-    # GIVEN A SCENARIO WITH KNOWN LA FEEDBACK
+def test_latest_submission(scenario_builder):
     table_schema = {
         'provenance': 'TEXT',
         'nhs_number': 'TEXT',
@@ -54,7 +53,7 @@ def test_latest_submission_with_multiple_ivr_entries(scenario_builder):
     scenario_builder.insert_into_arbitrary_table(
         "all_submissions",
         {
-            'provenance': 'IVR',
+            'provenance': 'WEB',
             'nhs_number': '123',
             'submission_time': '2010-11-03 00:00:00',
             'has_access_to_essential_supplies': 'EXPECTED_ROW',
@@ -77,6 +76,7 @@ def test_latest_submission_with_multiple_ivr_entries(scenario_builder):
             'phone_number_texts': '12345'
         }
     )
+
     con = presto_connect()
 
     with open('sql_to_build/latest_submission.sql', 'r') as f:
@@ -87,6 +87,7 @@ def test_latest_submission_with_multiple_ivr_entries(scenario_builder):
     rows = cur.fetchall()
 
     assert len(rows) == 1
-    assert rows[0][4] == ['EXPECTED_ROW']
+    assert rows[0][0] == 'WEB'
+    assert rows[0][3] == 'EXPECTED_ROW'
 
 

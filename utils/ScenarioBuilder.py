@@ -34,7 +34,6 @@ class ScenarioBuilder:
             f'nhs_inception_date TEXT)'
         con.run(create_command)
         con.run('TRUNCATE "nhs_clean_staging"')
-        con.commit()
 
     def _reset_ivr_data(self, con: pg8000.Connection):
         create_command = f'CREATE TABLE IF NOT EXISTS "ivr_clean_staging" (' \
@@ -57,7 +56,6 @@ class ScenarioBuilder:
             f'ivr_unmet_needs TEXT)'
         con.run(create_command)
         con.run('TRUNCATE "ivr_clean_staging"')
-        con.commit()
 
     def _reset_web_data(self, con: pg8000.Connection):
         create_command = f'CREATE TABLE IF NOT EXISTS "web_clean_staging" (' \
@@ -93,7 +91,6 @@ class ScenarioBuilder:
             f'created_at NUMERIC)'
         con.run(create_command)
         con.run('TRUNCATE "web_clean_staging"')
-        con.commit()
 
     def _reset_la_feedback_data(self, con: pg8000.Connection):
         create_command = f'CREATE TABLE IF NOT EXISTS "raw_la_outcomes_staging" (' \
@@ -120,7 +117,6 @@ class ScenarioBuilder:
             f'inputoutcomecomments TEXT)'
         con.run(create_command)
         con.run('TRUNCATE "raw_la_outcomes_staging"')
-        con.commit()
 
     def get_insert_command(self, table_name, record):
         fields = ','.join([f'"{key}"' for key in record])
@@ -144,6 +140,7 @@ class ScenarioBuilder:
         with pg_connect() as con:
             insert_command = self.get_insert_command(table_name, record)
             con.run(insert_command)
+            con.commit()
 
     def drop_arbitrary_tables(self, con: pg8000.Connection):
         for table in self.arbitrary_tables:
@@ -212,13 +209,15 @@ class ScenarioBuilder:
         """
         List all tables in postgres db.
         """
-        with pg_connect().cursor() as cursor:
-            cursor.execute(
-                f"""
-                SELECT * FROM information_schema.tables
-                """
-            )
-            tables = cursor.fetchall()
-            return list(itertools.chain(*tables))
+        with pg_connect() as con:
+            with con.cursor() as cursor:
+                cursor.execute(
+                    f"""
+                    SELECT * FROM information_schema.tables
+                    """
+                )
+                tables = cursor.fetchall()
 
+                con.commit()
 
+        return list(itertools.chain(*tables))
