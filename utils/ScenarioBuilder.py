@@ -123,6 +123,21 @@ class ScenarioBuilder:
         command = f'INSERT INTO {table_name} ({fields}) VALUES ({values})'
         return command
 
+    def build_arbitrary_table(self, table_name: str, column_data_types: dict):
+        with pg_connect() as con:
+            create_command = (
+                f'CREATE TABLE IF NOT EXISTS {table_name} ('
+                f'{",".join([f"{key} {column_data_types[key]}" for key in column_data_types.keys()])}'
+                ')'
+            )
+            con.run(create_command)
+            con.run(f'TRUNCATE "{table_name}"')
+
+    def insert_into_arbitrary_table(self, table_name: str, record: dict):
+        with pg_connect() as con:
+            insert_command = self.get_insert_command(table_name, record)
+            con.run(insert_command)
+
     def reset(self):
         with pg_connect() as con:
             self._reset_nhs_data(con)

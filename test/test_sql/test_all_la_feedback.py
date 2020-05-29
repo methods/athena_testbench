@@ -26,3 +26,5 @@ def test_all_la_feedback_dates():
     row_dates = [row[2] for row in rows]
 
     assert row_dates == ['2010-11-01 00:00:00.000']*4
+
+

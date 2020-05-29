@@ -4,7 +4,8 @@ import re
 
 from typing import Sequence
 
-SNIPPET_LINE="/* START SNIPPET */"
+SNIPPET_LINE = "/* START SNIPPET */"
+
 
 def file_to_lines(filepath: str,
                   dir_if_not_in_filepath: str or None = None, prefix: str = '') -> list:
@@ -28,8 +29,9 @@ def file_to_lines(filepath: str,
         lines = f.read().splitlines()
         return [f'{prefix}{line}' for line in lines]
 
+
 def file_to_snippet(filepath: str,
-                  dir_if_not_in_filepath: str or None = None, prefix: str = '') -> list:
+                    dir_if_not_in_filepath: str or None = None, prefix: str = '') -> list:
     lines = file_to_lines(filepath=filepath, dir_if_not_in_filepath=dir_if_not_in_filepath, prefix='')
 
     try:
@@ -37,6 +39,7 @@ def file_to_snippet(filepath: str,
         return [f'{prefix}{line}' for line in lines[position_of_snippet_line + 1:]]
     except ValueError:
         return [f'{prefix}{line}' for line in lines]
+
 
 def build_sql(template_file: str,
               output_file: str,
@@ -95,9 +98,9 @@ def build_sql(template_file: str,
 
         if n_delimiters % 2 != 0:
             raise ValueError(
-            f"Unbalanced insert statement found on line {i} of {template_file}"
-            f" - insert statements must be bookended by {insert_delimiter}"
-        )
+                f"Unbalanced insert statement found on line {i} of {template_file}"
+                f" - insert statements must be bookended by {insert_delimiter}"
+            )
 
         line_split_on_delimiter = line.split(insert_delimiter)
 
