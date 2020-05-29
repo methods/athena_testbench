@@ -19,11 +19,11 @@ def generate_nhs_clean_entry():
         'nhs_patients_first_name': fake.first_name(),
         'nhs_patients_other_name': fake.first_name(),
         'nhs_patients_surname': fake.last_name(),
-        'nhs_patients_address_line1': fake.street_address(),
-        'nhs_patients_address_line2': fake.city(),
-        'nhs_patients_address_line3': fake.city(),
-        'nhs_patients_address_line4': '',
-        'nhs_patients_address_line5': '',
+        'nhs_patients_address_line_1': fake.street_address(),
+        'nhs_patients_address_line_2': fake.city(),
+        'nhs_patients_address_line_3': fake.city(),
+        'nhs_patients_address_line_4': '',
+        'nhs_patients_address_line_5': '',
         'nhs_postcode': postcodes.get_postcode(),
         'nhs_practice_code': '',
         'nhs_practice_name': '',
@@ -35,11 +35,12 @@ def generate_nhs_clean_entry():
     return entry
 
 
-def generate_ivr_clean_entry():
-    correct_nhs = random.choice([True, False])
+def generate_ivr_clean_entry(nhs_number=None):
+    correct_nhs = True if nhs_number else random.choice([True, False])
+    specified_number = nhs_number if nhs_number else random_nhs_number()
 
     entry = {
-        'ivr_nhs_number': f'{random_nhs_number()}' if correct_nhs else f'x-{random_nhs_number()}',
+        'ivr_nhs_number': f'{specified_number}' if correct_nhs else f'x-{specified_number()}',
         'ivr_dob': random_date_of_birth(),
         'ivr_postcode': postcodes.get_postcode(),
         'ivr_postal_code_verified': random.choice(['yes', 'no']),
@@ -60,14 +61,16 @@ def generate_ivr_clean_entry():
     return entry
 
 
-def generate_web_clean_entry():
+def generate_web_clean_entry(nhs_number=None):
     form_time = time.time()
     form_time = form_time - random.randint(0, 1000 * 60 * 60 * 24)
 
     dob = random_date_of_birth(output_format="%d/%m/%Y")
     dob_date = datetime.strptime(dob, "%d/%m/%Y")
 
-    know_nhs_number = random.choice(['yes'] * 4 + ['no'])
+    know_nhs_number = 'yes' if nhs_number else random.choice(['yes'] * 4 + ['no'])
+    specified_number = nhs_number if nhs_number else random_nhs_number()
+
     ref_id = str(uuid.uuid1())
 
     entry = {
@@ -80,7 +83,7 @@ def generate_web_clean_entry():
         'address_l2': fake.street_address(),
         'county': '',
         'postcode': postcodes.get_postcode(),
-        'nhs_number': random_nhs_number() if know_nhs_number == 'yes' else '',
+        'nhs_number': specified_number if know_nhs_number == 'yes' else '',
         'carry_supplies': random.choice(['yes'] * 2 + ['no']),
         'reference_id': ref_id,
         'dob_day': dob_date.day,
@@ -105,12 +108,12 @@ def generate_web_clean_entry():
     return entry
 
 
-def generate_raw_la_outcome():
+def generate_raw_la_outcome(nhs_number=None):
     entry = {
         'reference': str(uuid.uuid1()),
         'id': str(uuid.uuid1()),
         'sequencenumber': '1',
-        'nhsnumber': random_nhs_number(),
+        'nhsnumber': nhs_number if nhs_number else random_nhs_number(),
         'firstname': fake.first_name(),
         'middlename': fake.first_name(),
         'lastname': fake.last_name(),
