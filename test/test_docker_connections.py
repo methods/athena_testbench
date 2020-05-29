@@ -19,7 +19,6 @@ def test_python_can_connect_to_postgres():
             con.run("INSERT INTO book (title) VALUES (:title)", title=title)
         results = con.run("SELECT * FROM book")
 
-
     assert len(results) > 0
 
 
