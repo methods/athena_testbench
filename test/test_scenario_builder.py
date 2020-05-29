@@ -9,7 +9,6 @@ def scenario_builder():
     yield scenario_builder
     scenario_builder.reset()
 
-
 def test_scenario_builder_does_populate_database(scenario_builder):
     scenario_builder.insert_random_nhs_records(count=10)
     scenario_builder.insert_random_ivr_records(count=10)

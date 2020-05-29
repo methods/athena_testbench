@@ -24,6 +24,17 @@ def test_latest_submission(scenario_builder):
         'phone_number_texts': 'TEXT'
     }
     scenario_builder.build_arbitrary_table("all_submissions", table_schema)
+    expected_row = {
+        'provenance': 'WEB',
+        'nhs_number': '123',
+        'submission_time': '2010-11-03 00:00:00',
+        'has_access_to_essential_supplies': 'NO',
+        'is_able_to_carry_supplies': 'no',
+        'email_address': 'test_mail@test_mail.com',
+        'phone_number_calls': '0891505050',
+        'phone_number_texts': '0891505050'
+    }
+
     scenario_builder.insert_into_arbitrary_table(
         "all_submissions",
         {
@@ -52,16 +63,7 @@ def test_latest_submission(scenario_builder):
     )
     scenario_builder.insert_into_arbitrary_table(
         "all_submissions",
-        {
-            'provenance': 'WEB',
-            'nhs_number': '123',
-            'submission_time': '2010-11-03 00:00:00',
-            'has_access_to_essential_supplies': 'EXPECTED_ROW',
-            'is_able_to_carry_supplies': 'YES',
-            'email_address': 'notreal@notmail.com',
-            'phone_number_calls': '12345',
-            'phone_number_texts': '12345'
-        }
+        expected_row
     )
     scenario_builder.insert_into_arbitrary_table(
         "all_submissions",
@@ -77,17 +79,16 @@ def test_latest_submission(scenario_builder):
         }
     )
 
-    con = presto_connect()
-
     with open('sql_to_build/latest_submission.sql', 'r') as f:
         query = f.read()
 
+    con = presto_connect()
     cur = con.cursor()
     cur.execute(query)
     rows = cur.fetchall()
+    con.commit()
 
     assert len(rows) == 1
-    assert rows[0][0] == 'WEB'
-    assert rows[0][3] == 'EXPECTED_ROW'
+    assert all((item in list(expected_row.values()) for item in rows[0]))
 
 
