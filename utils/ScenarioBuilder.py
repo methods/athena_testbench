@@ -169,3 +169,14 @@ class ScenarioBuilder:
                 command = self.get_insert_command('raw_la_outcomes_staging', entry)
                 con.run(command)
             con.commit()
+
+    def insert_la_feedback(self, nhsnumber, inputoutcomecode, inputcompletedoutcomedate, inputoutcomecomments):
+
+        with pg_connect() as con:
+            entry = generate_raw_la_outcome(nhs_number=nhsnumber)
+            entry['inputoutcomecode'] = inputoutcomecode
+            entry['inputcompletedoutcomedate'] = inputcompletedoutcomedate
+            entry['inputoutcomecomments'] = inputoutcomecomments
+            command = self.get_insert_command('raw_la_outcomes_staging', entry)
+            con.run(command)
+            con.commit()
