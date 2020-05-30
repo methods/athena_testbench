@@ -1,6 +1,8 @@
 import prestodb
 import pg8000 as pg
 
+from typing import Sequence
+
 
 def pg_connect():
     return pg.connect(
@@ -21,10 +23,13 @@ def presto_connect():
     )
 
 
-def pg_transaction(sql_str: str) -> list:
+def pg_transaction(sql_str: str, values: Sequence or None = None) -> list:
     with pg_connect() as con:
         with con.cursor() as cur:
-            cur.execute(sql_str)
+            if values:
+                cur.execute(sql_str, values)
+            else:
+                cur.execute(sql_str, values)
             if cur.description is None:
                 return []
             return cur.fetchall()
@@ -35,5 +40,5 @@ def presto_transaction(sql_str: str) -> list:
     cur = con.cursor()
     cur.execute(sql_str)
     results = cur.fetchall()
-    con.commit()
+    # con.commit()
     return results
