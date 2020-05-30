@@ -19,3 +19,21 @@ def presto_connect():
         catalog='postgresql',
         schema='public',
     )
+
+
+def pg_transaction(sql_str: str) -> list:
+    with pg_connect() as con:
+        with con.cursor() as cur:
+            cur.execute(sql_str)
+            if cur.description is None:
+                return []
+            return cur.fetchall()
+
+
+def presto_transaction(sql_str: str) -> list:
+    con = presto_connect()
+    cur = con.cursor()
+    cur.execute(sql_str)
+    results = cur.fetchall()
+    con.commit()
+    return results
