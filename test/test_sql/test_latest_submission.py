@@ -2,12 +2,12 @@ import pytest
 
 from utils.ScenarioBuilder import ScenarioBuilder
 from utils.connections import presto_connect, presto_transaction, pg_connect
+from utils.random_utils import n_days_ago
 
 
-def test_latest_submission():
+def test_latest_submission_picks_most_recent_submission():
     with pg_connect() as con:
         scenario_builder = ScenarioBuilder(con)
-        # scenario_builder.reset()
 
         table_schema = {
             'provenance': 'TEXT',
@@ -21,32 +21,31 @@ def test_latest_submission():
         }
         scenario_builder.build_arbitrary_table("all_submissions", table_schema)
 
-        expected_row = {
-            'provenance': 'WEB',
-            'nhs_number': '123',
-            'submission_time': '2010-11-03 00:00:00',
-            'has_access_to_essential_supplies': 'NO',
-            'is_able_to_carry_supplies': 'no',
-            'email_address': 'test_mail@test_mail.com',
-            'phone_number_calls': '0891505050',
-            'phone_number_texts': '0891505050'
-        }
         submission_data = [
-            {
-            'provenance': 'IVR',
-            'nhs_number': '123',
-            'submission_time': '2010-11-02 00:00:00',
-            'has_access_to_essential_supplies': 'YES',
-            'is_able_to_carry_supplies': 'YES',
-            'email_address': 'notreal@notmail.com',
-            'phone_number_calls': '12345',
-            'phone_number_texts': '12345'
-            },
-            expected_row,
             {
                 'provenance': 'IVR',
                 'nhs_number': '123',
-                'submission_time': '2010-11-02 00:00:00',
+                'submission_time': n_days_ago(n=5),
+                'has_access_to_essential_supplies': 'YES',
+                'is_able_to_carry_supplies': 'YES',
+                'email_address': 'notreal@notmail.com',
+                'phone_number_calls': '12345',
+                'phone_number_texts': '12345'
+            },
+            {
+                'provenance': 'WEB',
+                'nhs_number': '123',
+                'submission_time': n_days_ago(n=1),
+                'has_access_to_essential_supplies': 'NO',
+                'is_able_to_carry_supplies': 'no',
+                'email_address': 'test_mail@test_mail.com',
+                'phone_number_calls': '0891505050',
+                'phone_number_texts': '0891505050'
+            },
+            {
+                'provenance': 'IVR',
+                'nhs_number': '123',
+                'submission_time': n_days_ago(n=3),
                 'has_access_to_essential_supplies': 'YES',
                 'is_able_to_carry_supplies': 'YES',
                 'email_address': 'notreal@notmail.com',
@@ -55,7 +54,7 @@ def test_latest_submission():
             }, {
                 'provenance': 'IVR',
                 'nhs_number': '123',
-                'submission_time': '2010-10-01 00:00:00',
+                'submission_time': n_days_ago(n=4),
                 'has_access_to_essential_supplies': 'YES',
                 'is_able_to_carry_supplies': 'YES',
                 'email_address': 'notreal@notmail.com',
@@ -63,6 +62,7 @@ def test_latest_submission():
                 'phone_number_texts': '12345'
             }
         ]
+        expected_row = submission_data[1]
 
         scenario_builder.insert_multiple_into_arbitrary_table(
             "all_submissions", submission_data
