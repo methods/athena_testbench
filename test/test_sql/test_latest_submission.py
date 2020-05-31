@@ -4,15 +4,9 @@ from utils.ScenarioBuilder import ScenarioBuilder
 from utils.connections import presto_connect
 
 
-@pytest.fixture()
-def scenario_builder():
-    scenario_builder = ScenarioBuilder()
-    scenario_builder.reset()
-    yield scenario_builder
-    scenario_builder.reset()
+def test_latest_submission():
 
 
-def test_latest_submission(scenario_builder):
     table_schema = {
         'provenance': 'TEXT',
         'nhs_number': 'TEXT',

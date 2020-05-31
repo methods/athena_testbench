@@ -4,14 +4,7 @@ from utils.ScenarioBuilder import ScenarioBuilder
 from utils.connections import presto_connect
 
 
-@pytest.fixture()
-def scenario_builder():
-    scenario_builder = ScenarioBuilder()
-    scenario_builder.reset()
-    yield scenario_builder
-    scenario_builder.reset()
-
-def test_all_la_feedback_dates(scenario_builder):
+def test_all_la_feedback_dates():
     # GIVEN A SCENARIO WITH KNOWN LA FEEDBACK
     test_date = '2010-11-01 00:00:00.000'
 

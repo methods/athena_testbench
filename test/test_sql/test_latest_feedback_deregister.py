@@ -1,18 +1,8 @@
 import pytest
 
 from utils.ScenarioBuilder import ScenarioBuilder
-from utils.connections import presto_connect
+from utils.connections import presto_transaction, pg_connect
 
-
-@pytest.fixture()
-def scenario_builder():
-    scenario_builder = ScenarioBuilder()
-    scenario_builder.reset()
-    yield scenario_builder
-    scenario_builder.reset()
-
-
-def test_latest_feedback_register_selects_deregistration(scenario_builder):
 
     table_schema = {
         'nhs_number': 'TEXT',
@@ -35,6 +25,7 @@ def test_latest_feedback_register_selects_deregistration(scenario_builder):
             'feedback_code': 'YF19',
             'feedback_time': '2010-11-01 00:00:00',
             'feedback_comments': 'lorem',
+def test_latest_feedback_register_selects_deregistration():
         }
     )
     scenario_builder.insert_into_arbitrary_table(
