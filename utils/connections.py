@@ -30,9 +30,10 @@ def pg_transaction(sql_str: str, values: Sequence or None = None) -> list:
                 cur.execute(sql_str, values)
             else:
                 cur.execute(sql_str, values)
-            if cur.description is None:
-                return []
-            return cur.fetchall()
+            if cur.description is not None:
+                return cur.fetchall()
+            con.commit()
+    return []
 
 
 def presto_transaction(sql_str: str) -> list:
