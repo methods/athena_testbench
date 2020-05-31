@@ -20,7 +20,7 @@ def test_python_can_connect_to_postgres():
     except Exception as e:
         print(f"EXCEPTION: {repr(e)}")
     finally:
-        pg_transaction("DROP TABLE IF EXISTS book")
+        pass
 
     assert len(results) > 0
 
@@ -37,6 +37,6 @@ def test_round_trip():
     except Exception as e:
         print(f"EXCEPTION: {repr(e)}")
     finally:
-        pg_transaction("DROP TABLE IF EXISTS book")
+        pass
 
     assert len(results) > 0
