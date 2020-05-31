@@ -4,7 +4,7 @@ import pg8000 as pg
 from typing import Sequence
 
 
-def pg_connect():
+def pg_connect() -> pg.Connection:
     return pg.connect(
         user="presto",
         database="postgres",
@@ -13,7 +13,7 @@ def pg_connect():
     )
 
 
-def presto_connect():
+def presto_connect() -> prestodb.dbapi.Connection:
     return prestodb.dbapi.connect(
         host='localhost',
         port=8080,
@@ -36,5 +36,6 @@ def presto_transaction(sql_str: str) -> list:
     cur = con.cursor()
     cur.execute(sql_str)
     results = cur.fetchall()
-    # con.commit()
+    con.commit()
+
     return results

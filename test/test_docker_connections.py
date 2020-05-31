@@ -24,7 +24,7 @@ def test_pg_transaction_can_create_and_drop_tables():
     assert "test_table" not in all_tables
 
 
-def test_pg_transaction_can_read_from_tables():
+def test_pg_transaction_reads_from_tables():
     pg_transaction("CREATE TABLE IF NOT EXISTS  book (id SERIAL, title TEXT)")
     pg_transaction("TRUNCATE book")
 
@@ -54,7 +54,7 @@ def test_presto_transaction_connects_to_postgres():
     assert len(results) > 0
 
 
-def test_presto_transaction_can_read_from_postgres_tables():
+def test_presto_transaction_reads_from_postgres_tables():
     pg_transaction("CREATE TABLE IF NOT EXISTS book (id SERIAL, title TEXT)")
     pg_transaction("TRUNCATE book")
 
