@@ -6,6 +6,7 @@ from typing import Sequence
 
 def pg_connect() -> pg.Connection:
     return pg.connect(
+        host='localhost',
         user="presto",
         database="postgres",
         password="9bee2c3975024292eff5829526722ac2",
