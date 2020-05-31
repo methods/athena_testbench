@@ -23,16 +23,12 @@ def presto_connect():
     )
 
 
-def pg_transaction(sql_str: str, values: Sequence or None = None) -> list:
+def pg_transaction(sql_str: str, values: dict = {}) -> list:
     with pg_connect() as con:
-        with con.cursor() as cur:
-            if values:
-                cur.execute(sql_str, values)
-            else:
-                cur.execute(sql_str, values)
-            if cur.description is None:
-                return []
-            return cur.fetchall()
+        results = con.run(sql_str, **values)
+        con.commit()
+
+        return results
 
 
 def presto_transaction(sql_str: str) -> list:
