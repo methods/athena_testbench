@@ -5,9 +5,6 @@ ToDo:
 
 import itertools
 import random
-import time
-
-import pg8000
 
 from utils.connections import pg_connect
 from utils.generators import generate_nhs_clean_entry, generate_ivr_clean_entry, generate_web_clean_entry, \
