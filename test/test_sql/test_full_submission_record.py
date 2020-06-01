@@ -7,6 +7,12 @@ from utils.ScenarioBuilder import ScenarioBuilder
 from utils.connections import presto_transaction, pg_connect
 from utils.random_utils import n_days_ago, random_nhs_number
 
+HEX_ID_1 = '302aac04af01d0eed013b6dd32bb10da'
+HEX_ID_2 = 'e8d175f597be6ef29741fef06f7243c5'
+HEX_ID_3 = 'c544695ada9d4be4f3279d288323e6ad'
+
+NHS_NUMBER_COL = 1
+RESOLVED_NEEDS_COL = 17
 
 def test_full_submission_record_feeds_through_all_latest_submissions(tmp_path: pytest.fixture):
     with pg_connect() as con:
@@ -34,7 +40,7 @@ def test_full_submission_record_feeds_through_all_latest_submissions(tmp_path: p
         # the results are 3 lines long and include all the codes
         assert len(results) == 3
 
-        nhs_numbers = [result[1] for result in results]
+        nhs_numbers = [result[NHS_NUMBER_COL] for result in results]
         assert set(nhs_numbers) == {'1', '2', '3'}
 
 
@@ -178,7 +184,7 @@ def test_resolved_has_access_gives_submission_value():
         # the results are 3 lines long and include all the codes
         assert len(results) == 3
 
-        nhs_numbers_and_resolved_has_needs = {(result[1], result[14]) for result in results}
+        nhs_numbers_and_resolved_has_needs = {(result[NHS_NUMBER_COL], result[RESOLVED_NEEDS_COL]) for result in results}
         assert nhs_numbers_and_resolved_has_needs == {('1', 'NO'), ('2', 'YES'), ('3', 'NO')}
 
 
@@ -212,7 +218,9 @@ def test_resolved_has_access_gives_opt_out_if_latest_feedback():
         # THEN
         # the feedback overrides the web submission
         assert len(results) == 1
-        assert results[0][14] == 'YES'
+        assert results[0][RESOLVED_NEEDS_COL] == 'YES'
+
+
 #
 #
 # def test_resolved_has_access_gives_opt_in_if_latest_feedback():
@@ -254,7 +262,7 @@ def test_resolved_has_access_overrides_opt_out_with_later_web_submission():
         # THEN
         # later web submission overrides the opt out feedback
         assert len(results) == 1
-        assert results[0][14] == 'NO'
+        assert results[0][RESOLVED_NEEDS_COL] == 'NO'
 
 
 def test_resolved_has_access_overrides_opt_out_with_web_submission_on_same_day():
@@ -287,7 +295,7 @@ def test_resolved_has_access_overrides_opt_out_with_web_submission_on_same_day()
         # THEN
         # later web submission the same day overrides the opt out feedback
         assert len(results) == 1
-        assert results[0][14] == 'NO'
+        assert results[0][RESOLVED_NEEDS_COL] == 'NO'
 
 
 def latest_la_feedback_opt_in_row(nhs_number, feedback_code, feedback_time, feedback_comments):
@@ -307,6 +315,13 @@ def latest_la_feedback_opt_out_row(nhs_number, feedback_code, feedback_time, fee
         'feedback_comments': feedback_comments,
     }
 
+def latest_wholesaler_opt_out_row(wholesaler_id, wholesaler_delivery_date, wholesaler_outcome, wholesaler_comments):
+    return {
+        'wholesaler_id': wholesaler_id,
+        'wholesaler_delivery_date': wholesaler_delivery_date,
+        'feedback_time': wholesaler_outcome,
+        'feedback_comments': wholesaler_comments,
+    }
 
 def latest_submission_row(nhs_number, has_access_to_essential_supplies, submission_time,
                           is_able_to_carry_supplies='YES', email_address=None, phone_number_calls=None,
@@ -327,6 +342,7 @@ def build_and_reset_data_sources(scenario_builder):
     build_latest_submissions_as_table(scenario_builder)
     build_latest_la_feedback_opt_in_as_table(scenario_builder)
     build_latest_la_feedback_opt_out_as_table(scenario_builder)
+    build_latest_wholesaler_opt_out_as_table(scenario_builder)
 
 
 def build_latest_la_feedback_opt_in_as_table(scenario_builder):
@@ -337,6 +353,16 @@ def build_latest_la_feedback_opt_in_as_table(scenario_builder):
         'feedback_comments': 'TEXT',
     }
     scenario_builder.build_arbitrary_table("latest_la_feedback_to_continue_boxes", table_schema)
+
+
+def build_latest_wholesaler_opt_out_as_table(scenario_builder):
+    table_schema = {
+        'wholesaler_id': 'TEXT',
+        'wholesaler_delivery_date': 'timestamp',
+        'wholesaler_outcome': 'TEXT',
+        'wholesaler_comments': 'TEXT',
+    }
+    scenario_builder.build_arbitrary_table("latest_wholesaler_opt_out", table_schema)
 
 
 def build_latest_la_feedback_opt_out_as_table(scenario_builder):
