@@ -16,14 +16,15 @@ def test_latest_feedback_deregister_template_selects_opt_out_feedback_codes(tmp_
         # the all_la_feedback view will return mixed feedback codes
         build_all_la_feedback_as_table(scenario_builder)
 
-        opt_out_codes = ['W003', 'W004', 'D001']
+        opt_out_codes = ['W003', 'W004', 'D001', 'F002']
         feedback_data = [
             all_la_feedback_row('test_1_1', 'YF19', n_days_ago(n=10), ""),
             all_la_feedback_row('test_1_2', 'W003', n_days_ago(n=10), "opt out code"),
             all_la_feedback_row('test_1_3', 'RM19', n_days_ago(n=10), ""),
             all_la_feedback_row('test_1_4', 'D001', n_days_ago(n=10), "opt out code"),
             all_la_feedback_row('test_1_5', 'W004', n_days_ago(n=10), "opt out code"),
-            all_la_feedback_row('test_1_6', 'YF19', n_days_ago(n=10), "")
+            all_la_feedback_row('test_1_6', 'YF19', n_days_ago(n=10), ""),
+            all_la_feedback_row('test_1_7', 'F002', n_days_ago(n=10), "opt out code"),
         ]
 
         scenario_builder.insert_multiple_into_arbitrary_table(
@@ -37,7 +38,7 @@ def test_latest_feedback_deregister_template_selects_opt_out_feedback_codes(tmp_
 
         # THEN
         # the results are 3 lines long and include all the codes
-        assert len(results) == 3
+        assert len(results) == 4
 
         codes = [result[1] for result in results]
         assert set(codes) == set(opt_out_codes)
@@ -56,7 +57,7 @@ def test_latest_feedback_opt_out_gets_latest_opt_out_row(tmp_path: pytest.fixtur
             all_la_feedback_row(test_nhs_number, 'RM19', n_days_ago(n=8), ""),
             all_la_feedback_row(test_nhs_number, 'D001', n_days_ago(n=7), ""),
             all_la_feedback_row(test_nhs_number, 'W004', n_days_ago(n=6), "expected"),
-            all_la_feedback_row(test_nhs_number, 'YF19', n_days_ago(n=5), "")
+            all_la_feedback_row(test_nhs_number, 'YF19', n_days_ago(n=5), ""),
         ]
 
         scenario_builder.insert_multiple_into_arbitrary_table(
