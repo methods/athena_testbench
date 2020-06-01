@@ -6,7 +6,5 @@ SELECT
    FROM
      all_la_feedback
    WHERE
-     ("feedback_code" = 'W003') OR
-     ("feedback_code" = 'W004') OR
-     ("feedback_code" = 'D001') OR
-     ("feedback_code" = 'F002')
+      "feedback_code" IN ('W003', 'W004', 'D001', 'F002')
+

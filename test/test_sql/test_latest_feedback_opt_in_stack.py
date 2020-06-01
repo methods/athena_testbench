@@ -16,14 +16,13 @@ def test_la_feedback_opt_in_stack_selects_opt_out_feedback_codes(tmp_path: pytes
         # the all_la_feedback view will return mixed feedback codes
         build_all_la_feedback_as_table(scenario_builder)
 
-        opt_in_codes = ['any', 'other', 'code']
+        opt_in_codes = ['W006', 'F003']
         feedback_data = [
-            all_la_feedback_row('test_1_1', 'any', n_days_ago(n=10), ""),
+            all_la_feedback_row('test_1_1', 'W006', n_days_ago(n=10), ""),
             all_la_feedback_row('test_1_2', 'W003', n_days_ago(n=10), "opt out code"),
-            all_la_feedback_row('test_1_3', 'other', n_days_ago(n=10), ""),
+            all_la_feedback_row('test_1_3', 'F003', n_days_ago(n=10), ""),
             all_la_feedback_row('test_1_4', 'D001', n_days_ago(n=10), "opt out code"),
-            all_la_feedback_row('test_1_5', 'W004', n_days_ago(n=10), "opt out code"),
-            all_la_feedback_row('test_1_6', 'code', n_days_ago(n=10), "")
+            all_la_feedback_row('test_1_5', 'W004', n_days_ago(n=10), "opt out code")
         ]
 
         scenario_builder.insert_multiple_into_arbitrary_table(
@@ -37,7 +36,7 @@ def test_la_feedback_opt_in_stack_selects_opt_out_feedback_codes(tmp_path: pytes
 
         # THEN
         # the results are 3 lines long and include all the codes
-        assert len(results) == 3
+        assert len(results) == 2
 
         codes = [result[1] for result in results]
         assert set(codes) == set(opt_in_codes)
@@ -52,10 +51,9 @@ def test_la_feedback_opt_in_stack_gets_latest_opt_in_row(tmp_path: pytest.fixtur
         test_nhs_number = f'{random_nhs_number()}'
         feedback_data = [
             all_la_feedback_row(test_nhs_number, 'YF19', n_days_ago(n=10), ""),
-            all_la_feedback_row(test_nhs_number, 'W003', n_days_ago(n=9), ""),
+            all_la_feedback_row(test_nhs_number, 'F003', n_days_ago(n=9), ""),
             all_la_feedback_row(test_nhs_number, 'RM19', n_days_ago(n=8), ""),
-            all_la_feedback_row(test_nhs_number, 'D001', n_days_ago(n=7), ""),
-            all_la_feedback_row(test_nhs_number, 'YF19', n_days_ago(n=6), "expected"),
+            all_la_feedback_row(test_nhs_number, 'W006', n_days_ago(n=6), "expected"),
             all_la_feedback_row(test_nhs_number, 'W004', n_days_ago(n=5), "")
         ]
 
@@ -72,7 +70,7 @@ def test_la_feedback_opt_in_stack_gets_latest_opt_in_row(tmp_path: pytest.fixtur
         # the results for test_number is 1 lines long and has only the feedback from 6 days ago
         results_for_nhs_number = [result for result in results if result[0] == test_nhs_number]
         assert len(results_for_nhs_number) == 1
-        assert results_for_nhs_number[0][1] == 'YF19'
+        assert results_for_nhs_number[0][1] == 'W006'
 
 
 def test_la_feedback_opt_in_stack_returns_single_opt_in_row_if_two_on_the_same_day(tmp_path: pytest.fixture):
@@ -84,11 +82,11 @@ def test_la_feedback_opt_in_stack_returns_single_opt_in_row_if_two_on_the_same_d
         # including two lots of opt out feedback on the most recent occasion
         test_nhs_number = f'{random_nhs_number()}'
         feedback_data = [
-            all_la_feedback_row(test_nhs_number, 'YF19', n_days_ago(n=10), ""),
-            all_la_feedback_row(test_nhs_number, 'D001', n_days_ago(n=9), ""),
-            all_la_feedback_row(test_nhs_number, 'RM19', n_days_ago(n=6), "either this one"),
+            all_la_feedback_row(test_nhs_number, 'W006', n_days_ago(n=10), ""),
+            all_la_feedback_row(test_nhs_number, 'F003', n_days_ago(n=9), ""),
+            all_la_feedback_row(test_nhs_number, 'W006', n_days_ago(n=6), "expected"),
             all_la_feedback_row(test_nhs_number, 'W003', n_days_ago(n=6), ""),
-            all_la_feedback_row(test_nhs_number, 'YF19', n_days_ago(n=6), "or this one"),
+            all_la_feedback_row(test_nhs_number, 'F003', n_days_ago(n=6), "expected"),
             all_la_feedback_row(test_nhs_number, 'W004', n_days_ago(n=5), "")
         ]
 
@@ -105,7 +103,7 @@ def test_la_feedback_opt_in_stack_returns_single_opt_in_row_if_two_on_the_same_d
         # the results for test_number is 1 lines long and has one of the feedback results from 6 days ago
         results_for_nhs_number = [result for result in results if result[0] == test_nhs_number]
         assert len(results_for_nhs_number) == 1
-        assert results_for_nhs_number[0][1] == 'YF19' or results_for_nhs_number[0][1] == 'RM19'
+        assert results_for_nhs_number[0][3] == 'expected'
 
 
 def all_la_feedback_row(nhs_number, feedback_code, feedback_time, feedback_comments):
