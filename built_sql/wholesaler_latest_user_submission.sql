@@ -181,30 +181,75 @@ WITH all_submissions AS (
 )
 
 
+/* WHOLESALER FEEDBACK */
+
+, wholesaler_opt_out_list AS (
+  SELECT id      AS wholesaler_id,
+         COALESCE(
+             TRY("date_parse"("deldate", '%Y-%m-%d %H:%i:%s')),
+             TRY("date_parse"("deldate", '%Y-%m-%d %H:%i:%s.%f')),
+             TRY("date_parse"("deldate", '%d-%m-%Y')),
+             TRY("date_parse"("deldate", '%d/%m/%Y'))
+           )        wholesaler_delivery_date,
+         outcome AS wholesaler_outcome,
+         comment AS wholesaler_comments
+  FROM clean_deliveries_outcome_staging
+  where outcome = '3'
+)
+
+, wholesaler_opt_out_list_deduplicated AS (
+  SELECT wholesaler_id, wholesaler_delivery_date, wholesaler_outcome, wholesaler_comments
+  FROM (
+         SELECT wholesaler_opt_out_list.*, "row_number"() OVER (PARTITION BY wholesaler_id, wholesaler_delivery_date) rk
+         FROM wholesaler_opt_out_list
+       )
+  WHERE rk = 1
+)
+
+, latest_wholesaler_opt_out AS (
+  SELECT wholesaler_opt_out_list_deduplicated.*
+  FROM (
+        (
+          SELECT "max"("wholesaler_delivery_date") "ft", "wholesaler_id" "ws_id"
+          FROM wholesaler_opt_out_list_deduplicated
+          GROUP BY "wholesaler_id"
+        )
+         INNER JOIN wholesaler_opt_out_list_deduplicated
+                    ON (("wholesaler_id" = "ws_id") AND ("wholesaler_delivery_date" = "ft"))
+    )
+)
+
 /* STAGING OUTPUT */
 
 
 , full_submission_record AS (
-  SELECT
-    latest_submission.*
-    , "latest_la_feedback_to_stop_boxes"."feedback_code" "stop_feedback_code"
-    , "latest_la_feedback_to_stop_boxes"."feedback_time" "stop_feedback_time"
-    , "latest_la_feedback_to_stop_boxes"."feedback_comments" "stop_feedback_comments"
-    , "latest_la_feedback_to_continue_boxes"."feedback_code" "continue_feedback_code"
-    , "latest_la_feedback_to_continue_boxes"."feedback_time" "continue_feedback_time"
-    , "latest_la_feedback_to_continue_boxes"."feedback_comments" "continue_feedback_comments"
-    , CASE
-      WHEN "latest_la_feedback_to_stop_boxes"."feedback_time" >= latest_submission."submission_time"
-        THEN 'YES'
-        ELSE latest_submission."has_access_to_essential_supplies"
-      END AS "resolved_has_access_to_essential_supplies"
-  FROM
-    (
-      (
-        latest_submission
-        LEFT JOIN latest_la_feedback_to_stop_boxes ON (latest_submission."nhs_number" = "latest_la_feedback_to_stop_boxes"."nhs_number")
-      )
-      LEFT JOIN latest_la_feedback_to_continue_boxes ON (latest_submission."nhs_number" = "latest_la_feedback_to_continue_boxes"."nhs_number")
+  SELECT latest_submission.*,
+         "latest_la_feedback_to_stop_boxes"."feedback_code"         "stop_feedback_code",
+         "latest_la_feedback_to_stop_boxes"."feedback_time"         "stop_feedback_time",
+         "latest_la_feedback_to_stop_boxes"."feedback_comments"     "stop_feedback_comments",
+         "latest_la_feedback_to_continue_boxes"."feedback_code"     "continue_feedback_code",
+         "latest_la_feedback_to_continue_boxes"."feedback_time"     "continue_feedback_time",
+         "latest_la_feedback_to_continue_boxes"."feedback_comments" "continue_feedback_comments",
+         "latest_wholesaler_opt_out"."wholesaler_outcome"           "wholesaler_stop_code",
+         "latest_wholesaler_opt_out"."wholesaler_outcome"           "wholesaler_stop_time",
+         "latest_wholesaler_opt_out"."wholesaler_comments"           "wholesaler_comments",
+         CASE
+           WHEN "latest_la_feedback_to_stop_boxes"."feedback_time" >= latest_submission."submission_time"
+             THEN 'YES'
+           ELSE latest_submission."has_access_to_essential_supplies"
+           END AS                                                   "resolved_has_access_to_essential_supplies"
+  FROM (
+        (
+          (
+            latest_submission
+              LEFT JOIN latest_la_feedback_to_stop_boxes ON (latest_submission."nhs_number" =
+                                                             "latest_la_feedback_to_stop_boxes"."nhs_number")
+            )
+            LEFT JOIN latest_la_feedback_to_continue_boxes ON (latest_submission."nhs_number" =
+                                                               "latest_la_feedback_to_continue_boxes"."nhs_number")
+          )
+         LEFT JOIN latest_wholesaler_opt_out ON (latest_wholesaler_opt_out.wholesaler_id = LOWER(
+      TO_HEX(MD5(TO_UTF8(CONCAT('${salt}:', latest_submission.nhs_number))))))
     )
 )
 
@@ -228,6 +273,6 @@ SELECT
   CASE WHEN resolved_has_access_to_essential_supplies = 'NO' AND nhs_deceased = '0' THEN phone_number_texts ELSE '' END AS PhoneTexts,
   CASE WHEN nhs_deceased = '0' THEN resolved_has_access_to_essential_supplies ELSE 'YES' END AS EssentialSupplies,
   CASE WHEN resolved_has_access_to_essential_supplies = 'NO' AND nhs_deceased = '0' THEN is_able_to_carry_supplies ELSE '' END AS CarrySupplies,
-  CASE WHEN resolved_has_access_to_essential_supplies = 'NO' AND nhs_deceased = '0' AND latest_la_feedback_to_continue_boxes IN ('F003', 'W006') THEN latest_la_feedback_to_continue_boxes.feedback_comments ELSE '' END AS DeliveryComments
+  CASE WHEN resolved_has_access_to_essential_supplies = 'NO' AND nhs_deceased = '0' AND continue_feedback_code IN ('F003', 'W006') THEN continue_feedback_comments ELSE '' END AS DeliveryComments
 FROM full_submission_record
 JOIN "nhs_clean_staging" ON nhs_nhs_number = nhs_number

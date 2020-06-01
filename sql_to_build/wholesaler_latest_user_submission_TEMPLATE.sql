@@ -33,6 +33,14 @@ WITH all_submissions AS (@all_submissions.sql@)
 , latest_la_feedback_to_stop_boxes AS (@latest_la_feedback_to_stop_boxes.sql@)
 
 
+/* WHOLESALER FEEDBACK */
+
+, wholesaler_opt_out_list AS (@wholesaler_opt_out_list.sql@)
+
+, wholesaler_opt_out_list_deduplicated AS (@wholesaler_opt_out_list_deduplicated.sql@)
+
+, latest_wholesaler_opt_out AS (@latest_wholesaler_opt_out.sql@)
+
 /* STAGING OUTPUT */
 
 
