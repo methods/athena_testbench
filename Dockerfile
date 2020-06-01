@@ -23,6 +23,6 @@ VOLUME $HOME/etc/
 VOLUME $HOME/data/
 
 EXPOSE 8080
-EXPOSE 5433
+EXPOSE 5432
 
 CMD ["/opt/presto/presto-server-0.157/bin/launcher", "run"]
