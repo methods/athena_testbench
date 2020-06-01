@@ -131,7 +131,7 @@ def test_full_submission_record_appends_both_opt_in_and_opt_out_if_present():
         )
 
         opt_out_data = [
-            latest_la_feedback_opt_in_row('1', 'F002', n_days_ago(1), 'expect opt out')
+            latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(1), 'expect opt out')
         ]
         scenario_builder.insert_multiple_into_arbitrary_table(
             "latest_la_feedback_to_stop_boxes", opt_out_data
@@ -153,27 +153,141 @@ def test_full_submission_record_appends_both_opt_in_and_opt_out_if_present():
 
 
 def test_resolved_has_access_gives_submission_value():
-    pass
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # the tables are all built and reset
+        build_and_reset_data_sources(scenario_builder)
+
+        submission_data = [
+            latest_submission_row('1', 'NO', n_days_ago(n=1)),
+            latest_submission_row('2', 'YES', n_days_ago(n=1)),
+            latest_submission_row('3', 'NO', n_days_ago(n=1)),
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", submission_data
+        )
+
+        # WHEN
+        # we build the latest feedback deregister stack and run it in presto
+        query = read_query('sql_to_build/full_submission_record.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # the results are 3 lines long and include all the codes
+        assert len(results) == 3
+
+        nhs_numbers_and_resolved_has_needs = {(result[1], result[14]) for result in results}
+        assert nhs_numbers_and_resolved_has_needs == {('1', 'NO'), ('2', 'YES'), ('3', 'NO')}
 
 
 def test_resolved_has_access_gives_opt_out_if_latest_feedback():
-    pass
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
 
+        # GIVEN
+        # web needs food 10 days ago + feedback doesnt need food 1 day ago
+        build_and_reset_data_sources(scenario_builder)
 
-def test_resolved_has_access_gives_opt_in_if_latest_feedback():
-    pass
+        submission_data = [
+            latest_submission_row('1', 'NO', n_days_ago(n=10))
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", submission_data
+        )
 
+        opt_out_data = [
+            latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(1), 'expect opt out')
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_la_feedback_to_stop_boxes", opt_out_data
+        )
 
-def test_resolved_has_access_gives_opt_out_if_opt_out_and_opt_in_on_same_day():
-    pass
+        # WHEN
+        # we run the full_submission record query
+        query = read_query('sql_to_build/full_submission_record.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # the feedback overrides the web submission
+        assert len(results) == 1
+        assert results[0][14] == 'YES'
+#
+#
+# def test_resolved_has_access_gives_opt_in_if_latest_feedback():
+#
+#     pass
+#
+#
+# def test_resolved_has_access_gives_opt_out_if_opt_out_and_opt_in_on_same_day():
+#     pass
 
 
 def test_resolved_has_access_overrides_opt_out_with_later_web_submission():
-    pass
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # web needs food 10 days ago + feedback doesnt need food 1 day ago
+        build_and_reset_data_sources(scenario_builder)
+
+        submission_data = [
+            latest_submission_row('1', 'NO', n_days_ago(n=1))
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", submission_data
+        )
+
+        opt_out_data = [
+            latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(5), 'do not expect opt out')
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_la_feedback_to_stop_boxes", opt_out_data
+        )
+
+        # WHEN
+        # we run the full_submission record query
+        query = read_query('sql_to_build/full_submission_record.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # later web submission overrides the opt out feedback
+        assert len(results) == 1
+        assert results[0][14] == 'NO'
 
 
 def test_resolved_has_access_overrides_opt_out_with_web_submission_on_same_day():
-    pass
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # feedback doesnt need food yesterday - web submission yesterday at noon requires food
+        build_and_reset_data_sources(scenario_builder)
+
+        opt_out_data = [
+            latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(1), '')
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_la_feedback_to_stop_boxes", opt_out_data
+        )
+
+        submission_data = [
+            latest_submission_row('1', 'NO', n_days_ago(n=1, time_str='12:00:00'))
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", submission_data
+        )
+
+        # WHEN
+        # we run the full_submission record query
+        query = read_query('sql_to_build/full_submission_record.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # later web submission the same day overrides the opt out feedback
+        assert len(results) == 1
+        assert results[0][14] == 'NO'
 
 
 def latest_la_feedback_opt_in_row(nhs_number, feedback_code, feedback_time, feedback_comments):
@@ -219,7 +333,7 @@ def build_latest_la_feedback_opt_in_as_table(scenario_builder):
     table_schema = {
         'nhs_number': 'TEXT',
         'feedback_code': 'TEXT',
-        'feedback_time': 'DATE',
+        'feedback_time': 'timestamp',
         'feedback_comments': 'TEXT',
     }
     scenario_builder.build_arbitrary_table("latest_la_feedback_to_continue_boxes", table_schema)
@@ -229,7 +343,7 @@ def build_latest_la_feedback_opt_out_as_table(scenario_builder):
     table_schema = {
         'nhs_number': 'TEXT',
         'feedback_code': 'TEXT',
-        'feedback_time': 'DATE',
+        'feedback_time': 'timestamp',
         'feedback_comments': 'TEXT',
     }
     scenario_builder.build_arbitrary_table("latest_la_feedback_to_stop_boxes", table_schema)
@@ -239,7 +353,7 @@ def build_latest_submissions_as_table(scenario_builder):
     table_schema = {
         'provenance': 'TEXT',
         'nhs_number': 'TEXT',
-        'submission_time': 'DATE',
+        'submission_time': 'timestamp',
         'has_access_to_essential_supplies': 'TEXT',
         'is_able_to_carry_supplies': 'TEXT',
         'email_address': 'TEXT',
