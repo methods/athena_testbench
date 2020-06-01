@@ -5,7 +5,6 @@ ToDo:
 
 import itertools
 import random
-import pg8000
 
 from utils.connections import pg_connect
 from utils.generators import generate_nhs_clean_entry, generate_ivr_clean_entry, generate_web_clean_entry, \
@@ -14,8 +13,11 @@ from utils.random_utils import random_nhs_number
 
 
 class ScenarioBuilder:
-    nhs_number_list = []
     arbitrary_tables = []
+
+    def __init__(self, pg_connection):
+        self.nhs_number_list = []
+        self.con = pg_connection
 
     def _reset_nhs_data(self):
         with pg_connect() as con:
@@ -138,36 +140,33 @@ class ScenarioBuilder:
         return command
 
     def build_arbitrary_table(self, table_name: str, column_data_types: dict):
-        with pg_connect() as con:
-            create_command = (
-                f'CREATE TABLE IF NOT EXISTS {table_name} ('
-                f'{",".join([f"{key} {column_data_types[key]}" for key in column_data_types.keys()])}'
-                ')'
-            )
-            con.run(create_command)
-            con.run(f'TRUNCATE "{table_name}"')
-            con.commit()
-            self.arbitrary_tables.append(table_name)
+        create_command = (
+            f'CREATE TABLE IF NOT EXISTS {table_name} ('
+            f'{",".join([f"{key} {column_data_types[key]}" for key in column_data_types.keys()])}'
+            ')'
+        )
+        self.con.run(create_command)
+        self.con.run(f'DELETE FROM "{table_name}"')
+        self.con.commit()
+        self.arbitrary_tables.append(table_name)
 
     def insert_into_arbitrary_table(self, table_name: str, record: dict):
-        with pg_connect() as con:
+        insert_command = self.get_insert_command(table_name, record)
+        self.con.run(insert_command)
+        self.con.commit()
+
+    def insert_multiple_into_arbitrary_table(self, table_name: str, records):
+        for record in records:
             insert_command = self.get_insert_command(table_name, record)
-            con.run(insert_command)
-            con.commit()
+            self.con.run(insert_command)
+        self.con.commit()
+
 
     def drop_arbitrary_tables(self):
-        with pg_connect() as con:
-            while self.arbitrary_tables:
-                table = self.arbitrary_tables.pop()
-                con.run(f"DROP TABLE IF EXISTS {table}")
-
-            con.commit()
-
-    def truncate_arbitrary_tables(self):
-        with pg_connect() as con:
-            for table in self.arbitrary_tables:
-                    con.run(f"TRUNCATE {table}")
-            con.commit()
+        for table in self.arbitrary_tables:
+            self.con.run(f"DROP TABLE IF EXISTS {table}")
+        self.con.commit()
+        self.arbitrary_tables = []
 
 
     def reset(self):
@@ -175,23 +174,15 @@ class ScenarioBuilder:
         self._reset_ivr_data()
         self._reset_web_data()
         self._reset_la_feedback_data()
-        self.drop_arbitrary_tables()
 
-    def soft_reset(self):
-        self._reset_nhs_data()
-        self._reset_ivr_data()
-        self._reset_web_data()
-        self._reset_la_feedback_data()
-        self.truncate_arbitrary_tables()
 
     def insert_random_nhs_records(self, count=100):
-        with pg_connect() as con:
-            for entry_number in range(0, count):
-                entry = generate_nhs_clean_entry()
-                self.nhs_number_list = self.nhs_number_list + [entry['nhs_nhs_number']]
-                command = self.get_insert_command('nhs_clean_staging', entry)
-                con.run(command)
-            con.commit()
+        for entry_number in range(0, count):
+            entry = generate_nhs_clean_entry()
+            self.nhs_number_list = self.nhs_number_list + [entry['nhs_nhs_number']]
+            command = self.get_insert_command('nhs_clean_staging', entry)
+            self.con.run(command)
+        self.con.commit()
 
     def get_nhs_number(self):
         if len(self.nhs_number_list) == 0:
@@ -200,53 +191,48 @@ class ScenarioBuilder:
             return random.choice(self.nhs_number_list)
 
     def insert_random_ivr_records(self, count=100):
-        with pg_connect() as con:
-            for entry_number in range(0, count):
-                entry = generate_ivr_clean_entry(nhs_number=self.get_nhs_number())
-                command = self.get_insert_command('ivr_clean_staging', entry)
-                con.run(command)
-            con.commit()
+        for entry_number in range(0, count):
+            entry = generate_ivr_clean_entry(nhs_number=self.get_nhs_number())
+            command = self.get_insert_command('ivr_clean_staging', entry)
+            self.con.run(command)
+        self.con.commit()
 
     def insert_random_web_records(self, count=100):
-        with pg_connect() as con:
-            for entry_number in range(0, count):
-                entry = generate_web_clean_entry(nhs_number=self.get_nhs_number())
-                command = self.get_insert_command('web_clean_staging', entry)
-                con.run(command)
-            con.commit()
+        for entry_number in range(0, count):
+            entry = generate_web_clean_entry(nhs_number=self.get_nhs_number())
+            command = self.get_insert_command('web_clean_staging', entry)
+            self.con.run(command)
+        self.con.commit()
 
     def insert_random_la_feedback(self, count=100):
-        with pg_connect() as con:
-            for entry_number in range(0, count):
-                entry = generate_raw_la_outcome(nhs_number=self.get_nhs_number())
-                command = self.get_insert_command('raw_la_outcomes_staging', entry)
-                con.run(command)
-            con.commit()
+        for entry_number in range(0, count):
+            entry = generate_raw_la_outcome(nhs_number=self.get_nhs_number())
+            command = self.get_insert_command('raw_la_outcomes_staging', entry)
+            self.con.run(command)
+        self.con.commit()
 
     def insert_la_feedback(self, nhsnumber, inputoutcomecode, inputcompletedoutcomedate, inputoutcomecomments):
 
-        with pg_connect() as con:
-            entry = generate_raw_la_outcome(nhs_number=nhsnumber)
-            entry['inputoutcomecode'] = inputoutcomecode
-            entry['inputcompletedoutcomedate'] = inputcompletedoutcomedate
-            entry['inputoutcomecomments'] = inputoutcomecomments
-            command = self.get_insert_command('raw_la_outcomes_staging', entry)
-            con.run(command)
-            con.commit()
+        entry = generate_raw_la_outcome(nhs_number=nhsnumber)
+        entry['inputoutcomecode'] = inputoutcomecode
+        entry['inputcompletedoutcomedate'] = inputcompletedoutcomedate
+        entry['inputoutcomecomments'] = inputoutcomecomments
+        command = self.get_insert_command('raw_la_outcomes_staging', entry)
+        self.con.run(command)
+        self.con.commit()
 
     def list_postgres_tables(self) -> list:
         """
         List all tables in postgres db.
         """
-        with pg_connect() as con:
-            with con.cursor() as cursor:
-                cursor.execute(
-                    f"""
-                    SELECT * FROM information_schema.tables
-                    """
-                )
-                tables = cursor.fetchall()
+        with self.con.cursor() as cursor:
+            cursor.execute(
+                f"""
+                SELECT * FROM information_schema.tables
+                """
+            )
+            tables = cursor.fetchall()
 
-            con.commit()
+        self.con.commit()
 
         return list(itertools.chain(*tables))

@@ -1,5 +1,5 @@
 SELECT
-    *
+    feedback_list_deduplicated_opt_out.*
   FROM
     (
       (

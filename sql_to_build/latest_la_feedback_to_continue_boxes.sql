@@ -1,4 +1,4 @@
-SELECT *
+SELECT feedback_list_deduplicated_continue.*
    FROM
      ((
       SELECT

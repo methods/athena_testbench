@@ -58,6 +58,6 @@ SELECT
   CASE WHEN resolved_has_access_to_essential_supplies = 'NO' AND nhs_deceased = '0' THEN phone_number_texts ELSE '' END AS PhoneTexts,
   CASE WHEN nhs_deceased = '0' THEN resolved_has_access_to_essential_supplies ELSE 'YES' END AS EssentialSupplies,
   CASE WHEN resolved_has_access_to_essential_supplies = 'NO' AND nhs_deceased = '0' THEN is_able_to_carry_supplies ELSE '' END AS CarrySupplies,
-  delivery_comments AS DeliveryComments
+  CASE WHEN resolved_has_access_to_essential_supplies = 'NO' AND nhs_deceased = '0' AND latest_la_feedback_to_continue_boxes=='W006' THEN latest_la_feedback_to_continue_boxes.feedback_comments ELSE '' END AS DeliveryComments
 FROM full_submission_record
 JOIN "nhs_clean_staging" ON nhs_nhs_number = nhs_number

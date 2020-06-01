@@ -10,12 +10,7 @@ SELECT
     WHEN CAST("latest_la_feedback_to_stop_boxes"."feedback_time" AS date) >= CAST("latest_submission"."submission_time" AS date)
     THEN 'YES'
     ELSE has_access_to_essential_supplies
-  END AS "resolved_has_access_to_essential_supplies"
-  , CASE
-    WHEN "latest_la_feedback_to_continue_boxes"."feedback_code"  = 'W006'
-    THEN "latest_la_feedback_to_continue_boxes"."feedback_comments"
-    ELSE ''
-  END AS "delivery_comments"
+    END AS "resolved_has_access_to_essential_supplies"
 FROM
   (
     (
