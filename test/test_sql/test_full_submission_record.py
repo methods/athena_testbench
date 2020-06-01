@@ -16,33 +16,140 @@ def test_full_submission_record_feeds_through_all_latest_submissions(tmp_path: p
         # the tables are all built and reset
         build_and_reset_data_sources(scenario_builder)
 
-        # scenario_builder.insert_multiple_into_arbitrary_table(
-        #     "all_la_feedback", feedback_data
-        # )
-        #
-        # # WHEN
-        # # we build the latest feedback deregister stack and run it in presto
-        # query = build_query(tmp_path, 'sql_to_build/latest_la_feedback_opt_in_stack_TEMPLATE.sql')
-        # results = presto_transaction(query)
-        #
-        # # THEN
-        # # the results are 3 lines long and include all the codes
-        # assert len(results) == 3
-        #
-        # codes = [result[3] for result in results]
-        # assert set(codes) == set(opt_in_codes)
+        submission_data = [
+            latest_submission_row('1', 'NO', n_days_ago(n=1)),
+            latest_submission_row('2', 'NO', n_days_ago(n=1)),
+            latest_submission_row('3', 'NO', n_days_ago(n=1)),
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", submission_data
+        )
+
+        # WHEN
+        # we build the latest feedback deregister stack and run it in presto
+        query = read_query('sql_to_build/full_submission_record.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # the results are 3 lines long and include all the codes
+        assert len(results) == 3
+
+        nhs_numbers = [result[1] for result in results]
+        assert set(nhs_numbers) == {'1', '2', '3'}
 
 
 def test_full_submission_record_appends_opt_in_if_present():
-    pass
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # the tables are all built and reset
+        build_and_reset_data_sources(scenario_builder)
+
+        submission_data = [
+            latest_submission_row('1', 'NO', n_days_ago(n=1))
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", submission_data
+        )
+
+        opt_out_data = [
+            latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(1), 'expected')
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_la_feedback_to_stop_boxes", opt_out_data
+        )
+
+        # WHEN
+        # we build the latest feedback deregister stack and run it in presto
+        query = read_query('sql_to_build/full_submission_record.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # the results are 1 lines long and includes all the codes
+        assert len(results) == 1
+
+        assert 'F002' in results[0]
+        assert 'expected' in results[0]
 
 
 def test_full_submission_record_appends_opt_out_if_present():
-    pass
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # the tables are all built and reset
+        build_and_reset_data_sources(scenario_builder)
+
+        submission_data = [
+            latest_submission_row('1', 'NO', n_days_ago(n=1))
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", submission_data
+        )
+
+        opt_in_data = [
+            latest_la_feedback_opt_in_row('1', 'F003', n_days_ago(1), 'expect opt out')
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_la_feedback_to_continue_boxes", opt_in_data
+        )
+
+        # WHEN
+        # we build the latest feedback deregister stack and run it in presto
+        query = read_query('sql_to_build/full_submission_record.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # the results are 1 lines long and includes all the codes
+        assert len(results) == 1
+
+        assert 'F003' in results[0]
+        assert 'expect opt out' in results[0]
 
 
 def test_full_submission_record_appends_both_opt_in_and_opt_out_if_present():
-    pass
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # the tables are all built and reset
+        build_and_reset_data_sources(scenario_builder)
+
+        submission_data = [
+            latest_submission_row('1', 'NO', n_days_ago(n=1))
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", submission_data
+        )
+
+        opt_in_data = [
+            latest_la_feedback_opt_in_row('1', 'F003', n_days_ago(1), 'expect opt in')
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_la_feedback_to_continue_boxes", opt_in_data
+        )
+
+        opt_out_data = [
+            latest_la_feedback_opt_in_row('1', 'F002', n_days_ago(1), 'expect opt out')
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_la_feedback_to_stop_boxes", opt_out_data
+        )
+
+        # WHEN
+        # we build the latest feedback deregister stack and run it in presto
+        query = read_query('sql_to_build/full_submission_record.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # the results are 1 lines long and includes all the codes
+        assert len(results) == 1
+
+        assert 'F002' in results[0]
+        assert 'F003' in results[0]
+        assert 'expect opt in' in results[0]
+        assert 'expect opt out' in results[0]
 
 
 def test_resolved_has_access_gives_submission_value():
@@ -112,7 +219,7 @@ def build_latest_la_feedback_opt_in_as_table(scenario_builder):
     table_schema = {
         'nhs_number': 'TEXT',
         'feedback_code': 'TEXT',
-        'feedback_time': 'TEXT',
+        'feedback_time': 'DATE',
         'feedback_comments': 'TEXT',
     }
     scenario_builder.build_arbitrary_table("latest_la_feedback_to_continue_boxes", table_schema)
@@ -122,7 +229,7 @@ def build_latest_la_feedback_opt_out_as_table(scenario_builder):
     table_schema = {
         'nhs_number': 'TEXT',
         'feedback_code': 'TEXT',
-        'feedback_time': 'TEXT',
+        'feedback_time': 'DATE',
         'feedback_comments': 'TEXT',
     }
     scenario_builder.build_arbitrary_table("latest_la_feedback_to_stop_boxes", table_schema)
@@ -140,3 +247,9 @@ def build_latest_submissions_as_table(scenario_builder):
         'phone_number_texts': 'TEXT'
     }
     scenario_builder.build_arbitrary_table("latest_submission", table_schema)
+
+
+def read_query(sql_file):
+    with open(sql_file, 'r') as f:
+        query = f.read()
+    return query

@@ -6,11 +6,7 @@ SELECT
   , "latest_la_feedback_to_continue_boxes"."feedback_code" "continue_feedback_code"
   , "latest_la_feedback_to_continue_boxes"."feedback_time" "continue_feedback_time"
   , "latest_la_feedback_to_continue_boxes"."feedback_comments" "continue_feedback_comments"
-  , CASE
-    WHEN CAST("latest_la_feedback_to_stop_boxes"."feedback_time" AS date) >= CAST("latest_submission"."submission_time" AS date)
-    THEN 'YES'
-    ELSE has_access_to_essential_supplies
-    END AS "resolved_has_access_to_essential_supplies"
+  , 'NO' AS "resolved_has_access_to_essential_supplies"
 FROM
   (
     (
