@@ -39,7 +39,7 @@ def test_la_feedback_opt_in_stack_selects_opt_out_feedback_codes(tmp_path: pytes
         # the results are 3 lines long and include all the codes
         assert len(results) == 3
 
-        codes = [result[3] for result in results]
+        codes = [result[1] for result in results]
         assert set(codes) == set(opt_in_codes)
 
 
@@ -70,9 +70,9 @@ def test_la_feedback_opt_in_stack_gets_latest_opt_in_row(tmp_path: pytest.fixtur
 
         # THEN
         # the results for test_number is 1 lines long and has only the feedback from 6 days ago
-        results_for_nhs_number = [result for result in results if result[2] == test_nhs_number]
+        results_for_nhs_number = [result for result in results if result[0] == test_nhs_number]
         assert len(results_for_nhs_number) == 1
-        assert results_for_nhs_number[0][3] == 'YF19'
+        assert results_for_nhs_number[0][1] == 'YF19'
 
 
 def test_la_feedback_opt_in_stack_returns_single_opt_in_row_if_two_on_the_same_day(tmp_path: pytest.fixture):
@@ -103,9 +103,9 @@ def test_la_feedback_opt_in_stack_returns_single_opt_in_row_if_two_on_the_same_d
 
         # THEN
         # the results for test_number is 1 lines long and has one of the feedback results from 6 days ago
-        results_for_nhs_number = [result for result in results if result[2] == test_nhs_number]
+        results_for_nhs_number = [result for result in results if result[0] == test_nhs_number]
         assert len(results_for_nhs_number) == 1
-        assert results_for_nhs_number[0][3] == 'YF19' or results_for_nhs_number[0][3] == 'RM19'
+        assert results_for_nhs_number[0][1] == 'YF19' or results_for_nhs_number[0][1] == 'RM19'
 
 
 def all_la_feedback_row(nhs_number, feedback_code, feedback_time, feedback_comments):
