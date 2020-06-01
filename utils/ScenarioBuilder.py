@@ -157,9 +157,18 @@ class ScenarioBuilder:
 
     def drop_arbitrary_tables(self):
         with pg_connect() as con:
-            for table in self.arbitrary_tables:
-                    con.run(f"DROP TABLE IF EXISTS {table}")
+            while self.arbitrary_tables:
+                table = self.arbitrary_tables.pop()
+                con.run(f"DROP TABLE IF EXISTS {table}")
+
             con.commit()
+
+    def truncate_arbitrary_tables(self):
+        with pg_connect() as con:
+            for table in self.arbitrary_tables:
+                    con.run(f"TRUNCATE {table}")
+            con.commit()
+
 
     def reset(self):
         self._reset_nhs_data()
@@ -167,6 +176,13 @@ class ScenarioBuilder:
         self._reset_web_data()
         self._reset_la_feedback_data()
         self.drop_arbitrary_tables()
+
+    def soft_reset(self):
+        self._reset_nhs_data()
+        self._reset_ivr_data()
+        self._reset_web_data()
+        self._reset_la_feedback_data()
+        self.truncate_arbitrary_tables()
 
     def insert_random_nhs_records(self, count=100):
         with pg_connect() as con:

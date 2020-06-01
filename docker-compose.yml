@@ -18,4 +18,4 @@ services:
       POSTGRES_PASSWORD: "9bee2c3975024292eff5829526722ac2"
       POSTGRES_DB: "postgres"
     ports:
-      - "5433:5432"
+      - "5432:5432"

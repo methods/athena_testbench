@@ -6,7 +6,10 @@ WITH feedback_deregistered AS (
    , "feedback_comments"
    FROM
      all_la_feedback
-   WHERE ("feedback_code" = 'W003') OR ("feedback_code" = 'W004') OR ("feedback_code" = 'D001')
+   WHERE ("feedback_code" = 'W003')
+       OR ("feedback_code" = 'W004')
+       OR ("feedback_code" = 'D001')
+       OR ("feedback_code" = 'F002')
 )
 
 , feedback_deregistered_w_row_counts AS (
