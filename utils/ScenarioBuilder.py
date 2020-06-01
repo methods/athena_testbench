@@ -5,6 +5,8 @@ ToDo:
 
 import itertools
 import random
+import time
+
 import pg8000
 
 from utils.connections import pg_connect
@@ -147,7 +149,7 @@ class ScenarioBuilder:
             ')'
         )
         self.con.run(create_command)
-        self.con.run(f'TRUNCATE "{table_name}"')
+        self.con.run(f'DELETE FROM "{table_name}"')
         self.con.commit()
         self.arbitrary_tables.append(table_name)
 

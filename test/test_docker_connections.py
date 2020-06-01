@@ -12,7 +12,7 @@ def test_python_can_connect_to_postgres():
     results = []
     try:
         pg_transaction("CREATE TABLE IF NOT EXISTS  book (id SERIAL, title TEXT)")
-        pg_transaction("TRUNCATE book")
+        pg_transaction("DELETE FROM book")
         for title in ("Ender's Game", "The Magus"):
             pg_transaction(f"INSERT INTO book (title) VALUES (%s)", [title])
         results = pg_transaction("SELECT * FROM book")
@@ -29,7 +29,7 @@ def test_round_trip():
     results = []
     try:
         pg_transaction("CREATE TABLE IF NOT EXISTS  book (id SERIAL, title TEXT)")
-        pg_transaction("TRUNCATE book")
+        pg_transaction("DELETE FROM book")
         for title in ("Ender's Game", "The Magus"):
             pg_transaction(f"INSERT INTO book (title) VALUES (%s)", [title])
         results = presto_transaction('SELECT * FROM book')
