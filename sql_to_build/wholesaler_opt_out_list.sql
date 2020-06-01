@@ -6,6 +6,6 @@ SELECT id      AS wholesaler_id,
            TRY("date_parse"("deldate", '%d/%m/%Y'))
          )        wholesaler_delivery_date,
        outcome AS wholesaler_outcome,
-       comment AS wholesaler_comment
+       comment AS wholesaler_comments
 FROM clean_deliveries_outcome_staging
 where outcome = '3'
