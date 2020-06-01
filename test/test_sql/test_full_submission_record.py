@@ -15,6 +15,8 @@ NHS_NUMBER_COL = 1
 RESOLVED_NEEDS_COL = 17
 
 
+# ============= TEST RECORDS ARE JOINING CORRECTLY ================
+
 def test_full_submission_record_feeds_through_all_latest_submissions(tmp_path: pytest.fixture):
     with pg_connect() as con:
         scenario_builder = ScenarioBuilder(con)
@@ -194,6 +196,8 @@ def test_full_submission_record_appends_wholesaler_feedback_if_present():
         assert 'test wholesaler comments' in results[0]
 
 
+# ============= TEST FINAL STATE CALCULATION ================
+
 def test_resolved_has_access_gives_submission_value():
     with pg_connect() as con:
         scenario_builder = ScenarioBuilder(con)
@@ -323,6 +327,111 @@ def test_resolved_has_access_overrides_opt_out_with_web_submission_on_same_day()
         assert len(results) == 1
         assert results[0][RESOLVED_NEEDS_COL] == 'NO'
 
+
+def test_resolved_has_access_gives_opt_out_if_wholesaler_feedback_most_recent():
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # web needs food 10 days ago + wholesaler opt out 1 day ago
+        build_and_reset_data_sources(scenario_builder)
+
+        submission_data = [
+            latest_submission_row('1', 'NO', n_days_ago(n=10))
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", submission_data
+        )
+
+        # wholesaler data with an id corresponding to nhs_number=1
+        wholesaler_data = [
+            latest_wholesaler_opt_out_row(HEX_ID_1, n_days_ago(1), '3', '')
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_wholesaler_opt_out", wholesaler_data
+        )
+
+        # WHEN
+        # we run the full_submission record query
+        query = read_query('sql_to_build/full_submission_record.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # the feedback overrides the web submission
+        assert len(results) == 1
+        assert results[0][RESOLVED_NEEDS_COL] == 'YES'
+
+
+def test_resolved_has_access_wholesaler_feedback_is_overridden_by_later_web_submission():
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # web needs food 10 days ago + wholesaler opt out 1 day ago
+        build_and_reset_data_sources(scenario_builder)
+
+        # wholesaler data with an id corresponding to nhs_number=1
+        wholesaler_data = [
+            latest_wholesaler_opt_out_row(HEX_ID_1, n_days_ago(10), '3', '')
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_wholesaler_opt_out", wholesaler_data
+        )
+
+        submission_data = [
+            latest_submission_row('1', 'NO', n_days_ago(n=1))
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", submission_data
+        )
+
+        # WHEN
+        # we run the full_submission record query
+        query = read_query('sql_to_build/full_submission_record.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # the feedback overrides the web submission
+        assert len(results) == 1
+        assert results[0][RESOLVED_NEEDS_COL] == 'NO'
+
+
+def test_resolved_has_access_wholesaler_feedback_is_overridden_by_web_submission_on_same_day():
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # web needs food 10 days ago + wholesaler opt out 1 day ago
+        build_and_reset_data_sources(scenario_builder)
+
+        # wholesaler opt out yesterday with an id corresponding to nhs_number=1
+        wholesaler_data = [
+            latest_wholesaler_opt_out_row(HEX_ID_1, n_days_ago(1), '3', '')
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_wholesaler_opt_out", wholesaler_data
+        )
+
+        # web submission yesterday at noon
+        submission_data = [
+            latest_submission_row('1', 'NO', n_days_ago(n=1, time_str="12:00:00"))
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", submission_data
+        )
+
+        # WHEN
+        # we run the full_submission record query
+        query = read_query('sql_to_build/full_submission_record.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # the web submission overrides the feedback
+        assert len(results) == 1
+        assert results[0][RESOLVED_NEEDS_COL] == 'NO'
+
+
+# ============= END TESTS ================
 
 def latest_la_feedback_opt_in_row(nhs_number, feedback_code, feedback_time, feedback_comments):
     return {
