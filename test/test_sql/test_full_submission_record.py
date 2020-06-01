@@ -14,6 +14,7 @@ HEX_ID_3 = 'c544695ada9d4be4f3279d288323e6ad'
 NHS_NUMBER_COL = 1
 RESOLVED_NEEDS_COL = 17
 
+
 def test_full_submission_record_feeds_through_all_latest_submissions(tmp_path: pytest.fixture):
     with pg_connect() as con:
         scenario_builder = ScenarioBuilder(con)
@@ -158,6 +159,41 @@ def test_full_submission_record_appends_both_opt_in_and_opt_out_if_present():
         assert 'expect opt out' in results[0]
 
 
+def test_full_submission_record_appends_wholesaler_feedback_if_present():
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # the tables are all built and reset
+        build_and_reset_data_sources(scenario_builder)
+
+        # a submission exists for nhs_number  = 1
+        submission_data = [
+            latest_submission_row('1', 'NO', n_days_ago(n=1))
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", submission_data
+        )
+
+        # wholesaler data with an id corresponding to nhs_number=1
+        wholesaler_data = [
+            latest_wholesaler_opt_out_row(HEX_ID_1, n_days_ago(1), '3', 'test wholesaler comments')
+        ]
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_wholesaler_opt_out", wholesaler_data
+        )
+
+        # WHEN
+        # we build the full submission stack and run it in presto
+        query = read_query('sql_to_build/full_submission_record.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # the results are 1 lines long and includes all the codes
+        assert len(results) == 1
+        assert 'test wholesaler comments' in results[0]
+
+
 def test_resolved_has_access_gives_submission_value():
     with pg_connect() as con:
         scenario_builder = ScenarioBuilder(con)
@@ -184,7 +220,8 @@ def test_resolved_has_access_gives_submission_value():
         # the results are 3 lines long and include all the codes
         assert len(results) == 3
 
-        nhs_numbers_and_resolved_has_needs = {(result[NHS_NUMBER_COL], result[RESOLVED_NEEDS_COL]) for result in results}
+        nhs_numbers_and_resolved_has_needs = {(result[NHS_NUMBER_COL], result[RESOLVED_NEEDS_COL]) for result in
+                                              results}
         assert nhs_numbers_and_resolved_has_needs == {('1', 'NO'), ('2', 'YES'), ('3', 'NO')}
 
 
@@ -219,17 +256,6 @@ def test_resolved_has_access_gives_opt_out_if_latest_feedback():
         # the feedback overrides the web submission
         assert len(results) == 1
         assert results[0][RESOLVED_NEEDS_COL] == 'YES'
-
-
-#
-#
-# def test_resolved_has_access_gives_opt_in_if_latest_feedback():
-#
-#     pass
-#
-#
-# def test_resolved_has_access_gives_opt_out_if_opt_out_and_opt_in_on_same_day():
-#     pass
 
 
 def test_resolved_has_access_overrides_opt_out_with_later_web_submission():
@@ -315,13 +341,15 @@ def latest_la_feedback_opt_out_row(nhs_number, feedback_code, feedback_time, fee
         'feedback_comments': feedback_comments,
     }
 
+
 def latest_wholesaler_opt_out_row(wholesaler_id, wholesaler_delivery_date, wholesaler_outcome, wholesaler_comments):
     return {
         'wholesaler_id': wholesaler_id,
         'wholesaler_delivery_date': wholesaler_delivery_date,
-        'feedback_time': wholesaler_outcome,
-        'feedback_comments': wholesaler_comments,
+        'wholesaler_outcome': wholesaler_outcome,
+        'wholesaler_comments': wholesaler_comments,
     }
+
 
 def latest_submission_row(nhs_number, has_access_to_essential_supplies, submission_time,
                           is_able_to_carry_supplies='YES', email_address=None, phone_number_calls=None,
