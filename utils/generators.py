@@ -40,7 +40,7 @@ def generate_ivr_clean_entry(nhs_number=None):
     specified_number = nhs_number if nhs_number else random_nhs_number()
 
     entry = {
-        'ivr_nhs_number': f'{specified_number}' if correct_nhs else f'x-{specified_number()}',
+        'ivr_nhs_number': f'{specified_number}' if correct_nhs else f'x-{specified_number}',
         'ivr_dob': random_date_of_birth(),
         'ivr_postcode': postcodes.get_postcode(),
         'ivr_postal_code_verified': random.choice(['yes', 'no']),

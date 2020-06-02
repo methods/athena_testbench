@@ -154,5 +154,3 @@ fabric.properties
 
 env/
 __pycache__
-sql_to_build/
-built_sql/
