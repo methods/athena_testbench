@@ -52,6 +52,13 @@ def test_submissions_feed_through_to_final_query(tmp_path: pytest.fixture):
                 nhs_clean_staging_row(3),
             ]
         )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "clean_latest_address_staging", [
+                clean_latest_address_row(1),
+                clean_latest_address_row(2),
+                clean_latest_address_row(3)
+            ]
+        )
 
         # WHEN
         # we build the latest feedback deregister stack and run it in presto
@@ -79,6 +86,11 @@ def test_users_that_deregister_themselves_are_marked_as_having_access_to_food(tm
         scenario_builder.insert_multiple_into_arbitrary_table(
             "nhs_clean_staging", [
                 nhs_clean_staging_row(1)
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "clean_latest_address_staging", [
+                clean_latest_address_row(1),
             ]
         )
 
@@ -112,6 +124,11 @@ def test_users_that_are_deregistered_by_la_are_marked_as_having_access_to_food(t
             ]
         )
         scenario_builder.insert_multiple_into_arbitrary_table(
+            "clean_latest_address_staging", [
+                clean_latest_address_row(1),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
             "latest_la_feedback_to_stop_boxes", [
                 latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(5), '')
             ]
@@ -139,6 +156,11 @@ def test_users_that_are_deregistered_by_la_then_reregister_marked_as_needing_foo
         scenario_builder.insert_multiple_into_arbitrary_table(
             "nhs_clean_staging", [
                 nhs_clean_staging_row(1)
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "clean_latest_address_staging", [
+                clean_latest_address_row(1),
             ]
         )
         scenario_builder.insert_multiple_into_arbitrary_table(
@@ -177,6 +199,11 @@ def test_users_that_are_deregistered_by_wholesaler_are_marked_as_having_access_t
             ]
         )
         scenario_builder.insert_multiple_into_arbitrary_table(
+            "clean_latest_address_staging", [
+                clean_latest_address_row(1),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
             "nhs_clean_staging", [
                 nhs_clean_staging_row(1)
             ]
@@ -209,6 +236,11 @@ def test_users_that_are_deregistered_by_wholesaler_then_reregister_are_marked_as
         scenario_builder.insert_multiple_into_arbitrary_table(
             "nhs_clean_staging", [
                 nhs_clean_staging_row(1)
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "clean_latest_address_staging", [
+                clean_latest_address_row(1),
             ]
         )
         scenario_builder.insert_multiple_into_arbitrary_table(
@@ -247,6 +279,11 @@ def test_users_that_are_deregistered_have_pii_surpressed(tmp_path: pytest.fixtur
             ]
         )
         scenario_builder.insert_multiple_into_arbitrary_table(
+            "clean_latest_address_staging", [
+                clean_latest_address_row(1),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
             "latest_submission", [
                 latest_submission_row('1', 'YES', n_days_ago(n=1)),
             ]
@@ -276,6 +313,11 @@ def test_users_that_are_deceased_have_pii_surpressed_and_marked_as_not_needing_s
         scenario_builder.insert_multiple_into_arbitrary_table(
             "nhs_clean_staging", [
                 nhs_clean_staging_row(1, nhs_deceased='1')
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "clean_latest_address_staging", [
+                clean_latest_address_row(1),
             ]
         )
         scenario_builder.insert_multiple_into_arbitrary_table(
@@ -312,6 +354,11 @@ def test_users_that_are_registered_have_pii_columns_available(tmp_path: pytest.f
             ]
         )
         scenario_builder.insert_multiple_into_arbitrary_table(
+            "clean_latest_address_staging", [
+                clean_latest_address_row(1),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
             "latest_submission", [
                 latest_submission_row('1', 'NO', n_days_ago(n=1)),
             ]
@@ -329,6 +376,40 @@ def test_users_that_are_registered_have_pii_columns_available(tmp_path: pytest.f
         assert results[0][POSTCODE] != ''
         assert results[0][MOBILE] != ''
 
+
+def test_address_details_are_pulled_from_latest_address_not_nhs_record(tmp_path: pytest.fixture):
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # a user who has registered for food and has a latest address postcode that differs from their nhs postcode
+        build_and_reset_data_sources(scenario_builder)
+
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "nhs_clean_staging", [
+                nhs_clean_staging_row(1, postcode="nhs postcode")
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "clean_latest_address_staging", [
+                clean_latest_address_row(1, postcode="latest address postcode"),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", [
+                latest_submission_row('1', 'NO', n_days_ago(n=1)),
+            ]
+        )
+
+        # WHEN
+        # we build the latest feedback user submission stack and run it in presto
+        query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # the latest address postcode is what is pulled through on the record
+        assert len(results) == 1
+        assert results[0][POSTCODE] == 'latest address postcode'
 
 # ============= END TESTS ================
 
