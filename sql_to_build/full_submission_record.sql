@@ -17,10 +17,10 @@ SELECT latest_submission.*,
          END AS                                                   "resolved_has_access_to_essential_supplies",
        CASE
          WHEN "latest_la_feedback_to_stop_boxes"."feedback_time" >= latest_submission."submission_time"
-           THEN 'Local authority'
+           THEN 'local authority'
          WHEN "latest_wholesaler_opt_out"."wholesaler_delivery_date" >= latest_submission."submission_time"
-           THEN 'Wholesaler'
-         ELSE 'Web/IVR'
+           THEN 'wholesaler'
+         ELSE 'web/ivr'
          END AS "resolved_has_access_to_essential_supplies_source"
 FROM (
       (
