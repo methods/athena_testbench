@@ -4,9 +4,11 @@ ToDo:
 """
 
 import itertools
+import pytest
 import random
 
-from utils.connections import pg_connect
+
+from utils.connections import pg_connect, presto_transaction
 from utils.generators import generate_nhs_clean_entry, generate_ivr_clean_entry, generate_web_clean_entry, \
     generate_raw_la_outcome
 from utils.random_utils import random_nhs_number
@@ -164,16 +166,24 @@ class ScenarioBuilder:
 
     def drop_arbitrary_tables(self):
         for table in self.arbitrary_tables:
+            print(f"DROPPING {table}")
             self.con.run(f"DROP TABLE IF EXISTS {table}")
         self.con.commit()
         self.arbitrary_tables = []
 
+    def kill_running_presto_queries(self):
+        all_queries = presto_transaction("SELECT * FROM system.runtime.queries")
+        running_query_ids = (query[1] for query in all_queries if 'RUNNING' in query)
+        for query_id in running_query_ids:
+            presto_transaction(f"CALL system.runtime.kill_query(query_id => '{query_id}')")
 
     def reset(self):
+        self.kill_running_presto_queries()
         self.reset_nhs_data()
         self.reset_ivr_data()
         self.reset_web_data()
         self.reset_la_feedback_data()
+        self.drop_arbitrary_tables()
 
 
     def insert_random_nhs_records(self, count=100):
@@ -236,3 +246,15 @@ class ScenarioBuilder:
         self.con.commit()
 
         return list(itertools.chain(*tables))
+
+
+@pytest.fixture()
+def managed_scenario_builder():
+    """
+    Auto-resetting, instantiated scenario builder with managed connection as
+    pytest fixture.
+    """
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+        yield scenario_builder
+        scenario_builder.reset()
