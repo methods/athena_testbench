@@ -1,11 +1,10 @@
-SELECT
-    feedback_list_deduplicated_opt_out.*
+SELECT feedback_list_deduplicated_opt_out.*
   FROM
     (
       (
         SELECT
-          "max"("feedback_time") "ft"
-          , "nhs_number" "nn"
+          "max"("feedback_time") AS "ft"
+          , "nhs_number" AS "nn"
         FROM
           feedback_list_deduplicated_opt_out
         GROUP BY "nhs_number"
