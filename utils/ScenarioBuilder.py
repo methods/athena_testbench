@@ -7,7 +7,7 @@ import itertools
 import random
 import pg8000
 
-from utils.connections import pg_connect
+from utils.connections import pg_connect, presto_transaction
 from utils.generators import generate_nhs_clean_entry, generate_ivr_clean_entry, generate_web_clean_entry, \
     generate_raw_la_outcome
 from utils.random_utils import random_nhs_number
@@ -161,7 +161,15 @@ class ScenarioBuilder:
                     con.run(f"DROP TABLE IF EXISTS {table}")
             con.commit()
 
+    def kill_running_presto_queries(self):
+        running_queries = presto_transaction(
+            "SELECT * FROM system.runtime.queries"
+        )
+        breakpoint()
+        print(running_queries)
+
     def reset(self):
+        self.kill_running_presto_queries()
         self._reset_nhs_data()
         self._reset_ivr_data()
         self._reset_web_data()

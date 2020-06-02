@@ -4,6 +4,13 @@ import itertools
 from utils.connections import  presto_transaction, pg_transaction
 
 
+def kill_running_presto_queries():
+        running_queries = presto_transaction(
+            "SELECT * FROM system.runtime.queries"
+        )
+        print(running_queries)
+
+
 def test_pg_transaction_connects_to_postgres():
     results = pg_transaction("SELECT * FROM information_schema.tables")
 
@@ -66,7 +73,7 @@ def test_presto_transaction_reads_from_postgres_tables():
 
     results_pg = pg_transaction("SELECT * FROM book")
     results_presto = presto_transaction("SELECT * FROM book")
-
+    kill_running_presto_queries()
     pg_transaction("DROP TABLE IF EXISTS book")
 
     assert results_pg == results_presto
