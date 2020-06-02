@@ -5,7 +5,7 @@ from faker import Faker
 
 from build_sql import build_sql
 from utils.ScenarioBuilder import ScenarioBuilder
-from utils.connections import presto_transaction, pg_connect
+from utils.connections import presto_transaction, pg_connect, kill_running_presto_queries
 from utils.postcodes import PostcodeGenerator
 from utils.random_utils import n_days_ago, random_nhs_number, random_covid_date, random_date_of_birth
 
@@ -16,8 +16,7 @@ HEX_ID_1 = '302aac04af01d0eed013b6dd32bb10da'
 HEX_ID_2 = 'e8d175f597be6ef29741fef06f7243c5'
 HEX_ID_3 = 'c544695ada9d4be4f3279d288323e6ad'
 
-NHS_NUMBER_COL = 1
-RESOLVED_NEEDS_COL = 17
+SOURCE_COL = 12
 
 """
 deregistered_users_test_stack.sql includes full_submission_record.sql as a with
@@ -94,6 +93,192 @@ def test_users_that_deregister_themselves_do_not_get_listed(tmp_path: pytest.fix
         # THEN
         # there are no results returned
         assert len(results) == 0
+
+
+def test_users_that_are_deregistered_by_wholesaler_get_listed(tmp_path: pytest.fixture):
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # users have registered and one has been deregistered by the wholesaler
+        build_and_reset_data_sources(scenario_builder)
+
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", [
+                latest_submission_row('1', 'NO', n_days_ago(n=10)),
+                latest_submission_row('2', 'NO', n_days_ago(n=10)),
+                latest_submission_row('3', 'NO', n_days_ago(n=10)),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "nhs_clean_staging", [
+                nhs_clean_staging_row(1),
+                nhs_clean_staging_row(2),
+                nhs_clean_staging_row(3),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_wholesaler_opt_out", [
+                latest_wholesaler_opt_out_row(HEX_ID_1, n_days_ago(1), '3', '')
+            ]
+        )
+
+        # WHEN
+        # we build the latest feedback deregister stack and run it in presto
+        query = build_query(tmp_path, 'sql_to_build/deregistered_users_test_stack_TEMPLATE.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # there are no results returned
+        assert len(results) == 1
+        assert results[0][SOURCE_COL] == 'wholesaler'
+
+
+def test_users_that_are_deregistered_by_local_authority_get_listed(tmp_path: pytest.fixture):
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # users have registered and one has been deregistered by the wholesaler
+        build_and_reset_data_sources(scenario_builder)
+
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", [
+                latest_submission_row('1', 'NO', n_days_ago(n=10)),
+                latest_submission_row('2', 'NO', n_days_ago(n=10)),
+                latest_submission_row('3', 'NO', n_days_ago(n=10)),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "nhs_clean_staging", [
+                nhs_clean_staging_row(1),
+                nhs_clean_staging_row(2),
+                nhs_clean_staging_row(3),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_la_feedback_to_stop_boxes", [
+                latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(1), '')
+            ]
+        )
+
+        # WHEN
+        # we build the latest feedback deregister stack and run it in presto
+        query = build_query(tmp_path, 'sql_to_build/deregistered_users_test_stack_TEMPLATE.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # there are no results returned
+        assert len(results) == 1
+        assert results[0][SOURCE_COL] == 'local authority'
+
+
+def test_users_that_are_deregistered_by_local_authority_then_reregister_are_not_listed(tmp_path: pytest.fixture):
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # user is removed by an la - then re-registers
+        build_and_reset_data_sources(scenario_builder)
+
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "nhs_clean_staging", [
+                nhs_clean_staging_row(1),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_la_feedback_to_stop_boxes", [
+                latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(5), '')
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", [
+                latest_submission_row('1', 'NO', n_days_ago(n=1)),
+            ]
+        )
+
+        # WHEN
+        # we build the deregister users stack and run it in presto
+        query = build_query(tmp_path, 'sql_to_build/deregistered_users_test_stack_TEMPLATE.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # no results are returned
+        assert len(results) == 0
+
+
+def test_users_that_are_deregistered_by_wholesaler_then_reregister_are_not_listed(tmp_path: pytest.fixture):
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # user is removed by an wholesaler - then re-registers
+        build_and_reset_data_sources(scenario_builder)
+
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "nhs_clean_staging", [
+                nhs_clean_staging_row(1),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_wholesaler_opt_out", [
+                latest_wholesaler_opt_out_row(HEX_ID_1, n_days_ago(5), '3', '')
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", [
+                latest_submission_row('1', 'NO', n_days_ago(n=1)),
+            ]
+        )
+
+        # WHEN
+        # we build the deregister users stack and run it in presto
+        query = build_query(tmp_path, 'sql_to_build/deregistered_users_test_stack_TEMPLATE.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # no results are returned
+        assert len(results) == 0
+
+
+def test_user_that_is_deregistered_by_la_and_wholesaler_only_registers_once(tmp_path: pytest.fixture):
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # user is removed by an wholesaler - then re-registers
+        build_and_reset_data_sources(scenario_builder)
+
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "nhs_clean_staging", [
+                nhs_clean_staging_row(1),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", [
+                latest_submission_row('1', 'NO', n_days_ago(n=10)),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_wholesaler_opt_out", [
+                latest_wholesaler_opt_out_row(HEX_ID_1, n_days_ago(5), '3', '')
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_la_feedback_to_stop_boxes", [
+                latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(5), '')
+            ]
+        )
+
+        # WHEN
+        # we build the deregister users stack and run it in presto
+        query = build_query(tmp_path, 'sql_to_build/deregistered_users_test_stack_TEMPLATE.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # no results are returned
+        assert len(results) == 1
+
 
 
 # ============= END TESTS ================
