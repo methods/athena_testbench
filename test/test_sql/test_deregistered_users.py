@@ -280,6 +280,38 @@ def test_user_that_is_deregistered_by_la_and_wholesaler_only_registers_once(tmp_
         assert len(results) == 1
 
 
+def test_user_that_is_marked_as_deceased_by_la_is_not_listed(tmp_path: pytest.fixture):
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # user is removed by an wholesaler - then re-registers
+        build_and_reset_data_sources(scenario_builder)
+
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "nhs_clean_staging", [
+                nhs_clean_staging_row(1),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", [
+                latest_submission_row('1', 'NO', n_days_ago(n=10)),
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_la_feedback_to_stop_boxes", [
+                latest_la_feedback_opt_out_row('1', 'D001', n_days_ago(5), '')
+            ]
+        )
+
+        # WHEN
+        # we build the deregister users stack and run it in presto
+        query = build_query(tmp_path, 'sql_to_build/deregistered_users_test_stack_TEMPLATE.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # no results are returned
+        assert len(results) == 0
 
 # ============= END TESTS ================
 

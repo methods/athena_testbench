@@ -29,5 +29,6 @@ SELECT nhs_patients_first_name                                                 A
 FROM full_submission_record
        JOIN "nhs_clean_staging" ON nhs_nhs_number = nhs_number
 
-WHERE nhs_deceased = '0'
-  AND NOT full_submission_record.resolved_has_access_to_essential_supplies_source = 'web/ivr'
+WHERE (nhs_deceased = '0'
+    AND ((full_submission_record.stop_feedback_code IS NULL) OR NOT (full_submission_record.stop_feedback_code = 'D001')))
+    AND NOT (full_submission_record.resolved_has_access_to_essential_supplies_source = 'web/ivr')
