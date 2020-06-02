@@ -374,7 +374,7 @@ def latest_submission_row(nhs_number, has_access_to_essential_supplies, submissi
     }
 
 
-def nhs_clean_staging_row(nhs_number, nhs_deceased='0'):
+def nhs_clean_staging_row(nhs_number, nhs_deceased='0', postcode=None):
     return {
         'nhs_nhs_number': nhs_number,
         'nhs_dob': random_date_of_birth(),
@@ -387,7 +387,7 @@ def nhs_clean_staging_row(nhs_number, nhs_deceased='0'):
         'nhs_patients_address_line3': fake.city(),
         'nhs_patients_address_line4': '',
         'nhs_patients_address_line5': '',
-        'nhs_postcode': postcodes.get_postcode(),
+        'nhs_postcode': postcode if postcode else postcodes.get_postcode(),
         'nhs_practice_code': '',
         'nhs_practice_name': '',
         'nhs_contact_telephone': fake.phone_number(),
@@ -397,11 +397,27 @@ def nhs_clean_staging_row(nhs_number, nhs_deceased='0'):
     }
 
 
+def clean_latest_address_row(nhs_number, postcode=None):
+    return {
+        'nhs_number': nhs_number,
+        'address_line1': fake.street_address(),
+        'address_line2': fake.city(),
+        'address_line3': fake.city(),
+        'address_line4': '',
+        'address_line5': '',
+        'address_postcode': postcode if postcode else postcodes.get_postcode(),
+        'lad_code': 'lad_code',
+        'lad_name': 'lad_name',
+        'hub': 'hub'
+    }
+
+
 def build_and_reset_data_sources(scenario_builder):
     build_latest_submissions_as_table(scenario_builder)
     build_latest_la_feedback_opt_in_as_table(scenario_builder)
     build_latest_la_feedback_opt_out_as_table(scenario_builder)
     build_latest_wholesaler_opt_out_as_table(scenario_builder)
+    build_clean_latest_address_as_table(scenario_builder)
     scenario_builder.reset_nhs_data()
 
 
@@ -447,6 +463,22 @@ def build_latest_submissions_as_table(scenario_builder):
         'phone_number_texts': 'TEXT'
     }
     scenario_builder.build_arbitrary_table("latest_submission", table_schema)
+
+
+def build_clean_latest_address_as_table(scenario_builder):
+    table_schema = {
+        'nhs_number': 'TEXT',
+        'address_line1': 'TEXT',
+        'address_line2': 'TEXT',
+        'address_line3': 'TEXT',
+        'address_line4': 'TEXT',
+        'address_line5': 'TEXT',
+        'address_postcode': 'TEXT',
+        'lad_code': 'TEXT',
+        'lad_name': 'TEXT',
+        'hub': 'TEXT'
+    }
+    scenario_builder.build_arbitrary_table("clean_latest_address_staging", table_schema)
 
 
 def build_query(tmp_path, template):
