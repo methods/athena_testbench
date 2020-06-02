@@ -7,7 +7,7 @@ from build_sql import build_sql
 from utils.ScenarioBuilder import ScenarioBuilder
 from utils.connections import presto_transaction, pg_connect
 from utils.postcodes import PostcodeGenerator
-from utils.random_utils import n_days_ago, random_nhs_number, random_covid_date, random_date_of_birth
+from utils.random_utils import n_days_ago, random_covid_date, random_date_of_birth
 
 fake = Faker()
 postcodes = PostcodeGenerator()
@@ -20,11 +20,12 @@ LAST_NAME = 4
 MOBILE = 12
 
 """
-deregistered_users_test_stack.sql includes full_submission_record.sql as a with
+these tests are based off test_wholesaler_latest_user_submission_test_stack.sql
 
 this means our data sources are the ones that feed into full_submission_record and gives us a greater ability to test
 various scenarios
 
+we also need datasources for nhs records and the latest_address view
 """
 
 
