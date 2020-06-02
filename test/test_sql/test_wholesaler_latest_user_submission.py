@@ -265,6 +265,39 @@ def test_users_that_are_deregistered_have_pii_surpressed(tmp_path: pytest.fixtur
         assert results[0][MOBILE] == ''
 
 
+def test_users_that_are_deceased_have_pii_surpressed_and_marked_as_not_needing_supplies(tmp_path: pytest.fixture):
+    with pg_connect() as con:
+        scenario_builder = ScenarioBuilder(con)
+
+        # GIVEN
+        # a user who has registered for food but is now deceased
+        build_and_reset_data_sources(scenario_builder)
+
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "nhs_clean_staging", [
+                nhs_clean_staging_row(1, nhs_deceased='1')
+            ]
+        )
+        scenario_builder.insert_multiple_into_arbitrary_table(
+            "latest_submission", [
+                latest_submission_row('1', 'YES', n_days_ago(n=10)),
+            ]
+        )
+
+        # WHEN
+        # we build the latest feedback user submission stack and run it in presto
+        query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
+        results = presto_transaction(query)
+
+        # THEN
+        # the user has most of their data surpressed
+        assert len(results) == 1
+        assert results[0][HAS_ACCESS] == 'YES'
+        assert results[0][LAST_NAME] == ''
+        assert results[0][POSTCODE] == ''
+        assert results[0][MOBILE] == ''
+
+
 def test_users_that_are_registered_have_pii_columns_available(tmp_path: pytest.fixture):
     with pg_connect() as con:
         scenario_builder = ScenarioBuilder(con)
