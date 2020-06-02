@@ -162,11 +162,11 @@ class ScenarioBuilder:
             con.commit()
 
     def kill_running_presto_queries(self):
-        running_queries = presto_transaction(
-            "SELECT * FROM system.runtime.queries"
-        )
-        breakpoint()
-        print(running_queries)
+        all_queries = presto_transaction("SELECT * FROM system.runtime.queries")
+        running_query_ids = (query[1] for query in all_queries if 'RUNNING' in query)
+
+        for query_id in running_query_ids:
+            presto_transaction(f"CALL system.runtime.kill_query(query_id => '{query_id}')")
 
     def reset(self):
         self.kill_running_presto_queries()
