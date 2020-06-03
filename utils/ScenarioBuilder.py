@@ -19,7 +19,7 @@ class ScenarioBuilder:
         self.nhs_number_list = []
         self.con = pg_connection
 
-    def _reset_nhs_data(self):
+    def reset_nhs_data(self):
         with pg_connect() as con:
             create_command = f'CREATE TABLE IF NOT EXISTS "nhs_clean_staging" (' \
                 f'nhs_nhs_number TEXT,' \
@@ -28,11 +28,11 @@ class ScenarioBuilder:
                 f'nhs_patients_first_name TEXT,' \
                 f'nhs_patients_other_name TEXT,' \
                 f'nhs_patients_surname TEXT,' \
-                f'nhs_patients_address_line_1 TEXT,' \
-                f'nhs_patients_address_line_2 TEXT,' \
-                f'nhs_patients_address_line_3 TEXT,' \
-                f'nhs_patients_address_line_4 TEXT,' \
-                f'nhs_patients_address_line_5 TEXT,' \
+                f'nhs_patients_address_line1 TEXT,' \
+                f'nhs_patients_address_line2 TEXT,' \
+                f'nhs_patients_address_line3 TEXT,' \
+                f'nhs_patients_address_line4 TEXT,' \
+                f'nhs_patients_address_line5 TEXT,' \
                 f'nhs_postcode TEXT,' \
                 f'nhs_practice_code TEXT,' \
                 f'nhs_practice_name TEXT,' \
@@ -41,10 +41,10 @@ class ScenarioBuilder:
                 f'nhs_data_source TEXT,' \
                 f'nhs_inception_date TEXT)'
             con.run(create_command)
-            con.run('TRUNCATE "nhs_clean_staging"')
+            con.run('DELETE FROM "nhs_clean_staging"')
             con.commit()
 
-    def _reset_ivr_data(self):
+    def reset_ivr_data(self):
         with pg_connect() as con:
             create_command = f'CREATE TABLE IF NOT EXISTS "ivr_clean_staging" (' \
                 f'ivr_nhs_number TEXT,' \
@@ -65,10 +65,10 @@ class ScenarioBuilder:
                 f'ivr_call_timestamp TEXT,' \
                 f'ivr_unmet_needs TEXT)'
             con.run(create_command)
-            con.run('TRUNCATE "ivr_clean_staging"')
+            con.run('DELETE FROM "ivr_clean_staging"')
             con.commit()
 
-    def _reset_web_data(self):
+    def reset_web_data(self):
         with pg_connect() as con:
             create_command = f'CREATE TABLE IF NOT EXISTS "web_clean_staging" (' \
                 f'live_in_england TEXT,' \
@@ -102,10 +102,10 @@ class ScenarioBuilder:
                 f'unixtimestamp NUMERIC,' \
                 f'created_at NUMERIC)'
             con.run(create_command)
-            con.run('TRUNCATE "web_clean_staging"')
+            con.run('DELETE FROM "web_clean_staging"')
             con.commit()
 
-    def _reset_la_feedback_data(self):
+    def reset_la_feedback_data(self):
         with pg_connect() as con:
             create_command = f'CREATE TABLE IF NOT EXISTS "raw_la_outcomes_staging" (' \
                 f'reference TEXT,' \
@@ -130,7 +130,7 @@ class ScenarioBuilder:
                 f'inputcompletedoutcomedate TEXT,' \
                 f'inputoutcomecomments TEXT)'
             con.run(create_command)
-            con.run('TRUNCATE "raw_la_outcomes_staging"')
+            con.run('DELETE FROM "raw_la_outcomes_staging"')
             con.commit()
 
     def get_insert_command(self, table_name, record):
@@ -170,10 +170,10 @@ class ScenarioBuilder:
 
 
     def reset(self):
-        self._reset_nhs_data()
-        self._reset_ivr_data()
-        self._reset_web_data()
-        self._reset_la_feedback_data()
+        self.reset_nhs_data()
+        self.reset_ivr_data()
+        self.reset_web_data()
+        self.reset_la_feedback_data()
 
 
     def insert_random_nhs_records(self, count=100):
