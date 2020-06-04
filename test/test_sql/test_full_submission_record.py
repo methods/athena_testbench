@@ -13,6 +13,7 @@ HEX_ID_3 = 'c544695ada9d4be4f3279d288323e6ad'
 
 NHS_NUMBER_COL = 1
 RESOLVED_NEEDS_COL = 17
+RESOLVED_NEEDS_SOURCE_COL = 18
 
 
 # ============= TEST RECORDS ARE JOINING CORRECTLY ================
@@ -260,6 +261,7 @@ def test_resolved_has_access_gives_opt_out_if_latest_feedback():
         # the feedback overrides the web submission
         assert len(results) == 1
         assert results[0][RESOLVED_NEEDS_COL] == 'YES'
+        assert results[0][RESOLVED_NEEDS_SOURCE_COL] == 'local authority'
 
 
 def test_resolved_has_access_overrides_opt_out_with_later_web_submission():
@@ -293,6 +295,7 @@ def test_resolved_has_access_overrides_opt_out_with_later_web_submission():
         # later web submission overrides the opt out feedback
         assert len(results) == 1
         assert results[0][RESOLVED_NEEDS_COL] == 'NO'
+        assert results[0][RESOLVED_NEEDS_SOURCE_COL] == 'web/ivr'
 
 
 def test_resolved_has_access_overrides_opt_out_with_web_submission_on_same_day():
@@ -326,6 +329,7 @@ def test_resolved_has_access_overrides_opt_out_with_web_submission_on_same_day()
         # later web submission the same day overrides the opt out feedback
         assert len(results) == 1
         assert results[0][RESOLVED_NEEDS_COL] == 'NO'
+        assert results[0][RESOLVED_NEEDS_SOURCE_COL] == 'web/ivr'
 
 
 def test_resolved_has_access_gives_opt_out_if_wholesaler_feedback_most_recent():
@@ -360,6 +364,7 @@ def test_resolved_has_access_gives_opt_out_if_wholesaler_feedback_most_recent():
         # the feedback overrides the web submission
         assert len(results) == 1
         assert results[0][RESOLVED_NEEDS_COL] == 'YES'
+        assert results[0][RESOLVED_NEEDS_SOURCE_COL] == 'wholesaler'
 
 
 def test_resolved_has_access_wholesaler_feedback_is_overridden_by_later_web_submission():
@@ -394,6 +399,7 @@ def test_resolved_has_access_wholesaler_feedback_is_overridden_by_later_web_subm
         # the feedback overrides the web submission
         assert len(results) == 1
         assert results[0][RESOLVED_NEEDS_COL] == 'NO'
+        assert results[0][RESOLVED_NEEDS_SOURCE_COL] == 'web/ivr'
 
 
 def test_resolved_has_access_wholesaler_feedback_is_overridden_by_web_submission_on_same_day():
@@ -429,6 +435,7 @@ def test_resolved_has_access_wholesaler_feedback_is_overridden_by_web_submission
         # the web submission overrides the feedback
         assert len(results) == 1
         assert results[0][RESOLVED_NEEDS_COL] == 'NO'
+        assert results[0][RESOLVED_NEEDS_SOURCE_COL] == 'web/ivr'
 
 
 # ============= END TESTS ================

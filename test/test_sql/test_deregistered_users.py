@@ -5,16 +5,14 @@ from faker import Faker
 
 from build_sql import build_sql
 from utils.ScenarioBuilder import ScenarioBuilder
-from utils.connections import presto_transaction, pg_connect, kill_running_presto_queries
+from utils.connections import presto_transaction, pg_connect
 from utils.postcodes import PostcodeGenerator
-from utils.random_utils import n_days_ago, random_nhs_number, random_covid_date, random_date_of_birth
+from utils.random_utils import n_days_ago, random_covid_date, random_date_of_birth
 
 fake = Faker()
 postcodes = PostcodeGenerator()
 
 HEX_ID_1 = '302aac04af01d0eed013b6dd32bb10da'
-HEX_ID_2 = 'e8d175f597be6ef29741fef06f7243c5'
-HEX_ID_3 = 'c544695ada9d4be4f3279d288323e6ad'
 
 SOURCE_COL = 12
 
