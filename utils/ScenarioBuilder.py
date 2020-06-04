@@ -108,6 +108,9 @@ class ScenarioBuilder:
     def reset_la_feedback_data(self):
         with pg_connect() as con:
             create_command = f'CREATE TABLE IF NOT EXISTS "raw_la_outcomes_staging" (' \
+                f'inputoutcomecode TEXT,' \
+                f'inputcompletedoutcomedate TEXT,' \
+                f'inputoutcomecomments TEXT,' \
                 f'reference TEXT,' \
                 f'id TEXT,' \
                 f'sequencenumber NUMERIC,' \
@@ -126,11 +129,28 @@ class ScenarioBuilder:
                 f'completedoutcomedatetime TEXT,' \
                 f'nextplanneddate TEXT,' \
                 f'outcomecomments TEXT,' \
-                f'inputoutcomecode TEXT,' \
-                f'inputcompletedoutcomedate TEXT,' \
-                f'inputoutcomecomments TEXT)'
+                f'ingested_datetime TEXT,' \
+                f'row_count TEXT)'
             con.run(create_command)
             con.run('DELETE FROM "raw_la_outcomes_staging"')
+            con.commit()
+
+
+    def reset_wholesaler_data(self):
+        with pg_connect() as con:
+            create_command = f'CREATE TABLE IF NOT EXISTS "clean_deliveries_outcome_staging" (' \
+                f'company TEXT,' \
+                f'id TEXT,' \
+                f'name TEXT,' \
+                f'address TEXT,' \
+                f'postcode TEXT,' \
+                f'deldate TEXT,' \
+                f'outcome TEXT,' \
+                f'comment TEXT,' \
+                f'ingested_datetime TEXT,' \
+                f'row_count TEXT)'
+            con.run(create_command)
+            con.run('DELETE FROM "clean_deliveries_outcome_staging"')
             con.commit()
 
     def get_insert_command(self, table_name, record):
@@ -220,6 +240,7 @@ class ScenarioBuilder:
         command = self.get_insert_command('raw_la_outcomes_staging', entry)
         self.con.run(command)
         self.con.commit()
+
 
     def list_postgres_tables(self) -> list:
         """
