@@ -1,3 +1,7 @@
+
+SELECT timeline.*, row_number()
+  over (PARTITION BY nhs_number ORDER BY event_datetime, ingested_datetime) as event_order FROM
+(
 SELECT nhs_nhs_number AS nhs_number, ID, provenance, has_access_to_essential_supplies, event_datetime, ingested_datetime
 FROM (
        (
@@ -30,4 +34,4 @@ FROM (
      ) AS all_events
        JOIN nhs_clean_staging
             ON LOWER(TO_HEX(MD5(TO_UTF8(CONCAT('${salt}:', nhs_nhs_number))))) = ID
-ORDER BY nhs_nhs_number, event_datetime, ingested_datetime
+) as timeline

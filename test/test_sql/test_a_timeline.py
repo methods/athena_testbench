@@ -174,11 +174,11 @@ def test_wholesaler_feedback_is_added_to_the_timeline(tmp_path: pytest.fixture):
         scenario_builder.insert_multiple_into_arbitrary_table(
             "clean_deliveries_outcome_staging", [
                 generate_deliveries_outcome(ref_id=HEX_ID_1, code='3', delivery_date=n_days_ago(10, format='%d/%m/%Y'),
-                                            ingested_datetime=n_days_ago(9)),
+                                            ingested_datetime=n_days_ago(5)),
                 generate_deliveries_outcome(ref_id=HEX_ID_1, code='3', delivery_date=n_days_ago(10, format='%d/%m/%Y'),
                                             ingested_datetime=n_days_ago(9)),
                 generate_deliveries_outcome(ref_id=HEX_ID_1, code='3', delivery_date=n_days_ago(10, format='%d/%m/%Y'),
-                                            ingested_datetime=n_days_ago(9)),
+                                            ingested_datetime=n_days_ago(8)),
             ]
         )
 
@@ -209,10 +209,10 @@ def test_wholesaler_feedback_that_is_not_code_3_is_not_added_to_the_timeline(tmp
             "clean_deliveries_outcome_staging", [
                 generate_deliveries_outcome(ref_id=HEX_ID_1, code='1', delivery_date=n_days_ago(10, format='%d/%m/%Y'),
                                             ingested_datetime=n_days_ago(9)),
-                generate_deliveries_outcome(ref_id=HEX_ID_1, code='2', delivery_date=n_days_ago(8, format='%d/%m/%Y'),
-                                            ingested_datetime=n_days_ago(8)),
                 generate_deliveries_outcome(ref_id=HEX_ID_1, code='7', delivery_date=n_days_ago(7, format='%d/%m/%Y'),
                                             ingested_datetime=n_days_ago(7)),
+                generate_deliveries_outcome(ref_id=HEX_ID_1, code='2', delivery_date=n_days_ago(8, format='%d/%m/%Y'),
+                                            ingested_datetime=n_days_ago(8)),
             ]
         )
 
