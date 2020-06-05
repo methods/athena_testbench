@@ -1,3 +1,4 @@
+import hashlib
 import random
 import time
 
@@ -57,3 +58,10 @@ def n_days_ago(n, time_str="00:00:00", format="%Y-%m-%d %H:%M:%S"):
     complete_str = f'{date_str} {time_str}'
     complete_time = time.mktime(time.strptime(complete_str, "%Y-%m-%d %H:%M:%S"))
     return time.strftime(format, time.localtime(complete_time))
+
+
+def hash_nhs_number(nhs_number, salt='${salt}'):
+    m = hashlib.md5()
+    salt_concat_nhs_number = salt + ':' + nhs_number
+    m.update(salt_concat_nhs_number.encode())
+    return m.hexdigest()
