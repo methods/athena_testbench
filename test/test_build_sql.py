@@ -324,9 +324,9 @@ def test_build_sql_raises_when_inserts_not_bookended(tmp_path: pytest.fixture):
     string_sequence_to_file(template_sql_strs, template_sql_filepath)
 
     with pytest.raises(ValueError):
-
         module_under_test.build_sql(template_file=template_sql_filepath,
                                     output_file="doesnt_matter_what_is_here")
+
 
 def test_file_to_snippet_returns_full_file_if_no_snippet_line(tmp_path: pytest.fixture):
     file_without_snippet = [
@@ -339,7 +339,6 @@ def test_file_to_snippet_returns_full_file_if_no_snippet_line(tmp_path: pytest.f
     returned_lines = module_under_test.file_to_snippet('tmp.sql', dir_if_not_in_filepath=tmp_path, prefix='')
 
     assert file_without_snippet == returned_lines
-
 
 
 def test_file_to_snippet_returns_lines_after_snippet_if_snippet_line(tmp_path: pytest.fixture):
@@ -434,6 +433,53 @@ def test_build_sql_multiple_inserts_cascading(tmp_path: pytest.fixture):
 
     module_under_test.build_sql(template_file=template_sql_filepath,
                                 output_file=returned_sql_filepath)
+
+    returned_sql_strs = file_to_string_sequence(returned_sql_filepath)
+
+    assert returned_sql_strs == expected_sql_strs
+
+
+def test_build_sql_replacing_parameters(tmp_path: pytest.fixture):
+    """
+    Assert build_sql substitutes :parameter_name: with value
+    """
+    inserted_sql_strs = [
+        "SELECT",
+        "  x AS i",
+        "  y AS j",
+        "FROM some_table",
+        "WHERE z = :something:"
+    ]
+    inserted_sql_filename = "inserted_sql.sql"
+    inserted_sql_filepath = f"{tmp_path}/{inserted_sql_filename}"
+
+    template_sql_strs = [
+        f"WITH X AS @{inserted_sql_filename}@,",
+        "SELECT some_stuff FROM somewhere;"
+    ]
+    template_sql_filename = "template_sql.sql"
+    template_sql_filepath = f"{tmp_path}/{template_sql_filename}"
+    parameters = {'something': "'some value'"}
+
+    expected_sql_strs = [
+        "WITH X AS ",
+        "  SELECT",
+        "    x AS i",
+        "    y AS j",
+        "  FROM some_table",
+        "  WHERE z = 'some value',",
+        "SELECT some_stuff FROM somewhere;"
+    ]
+
+    string_sequence_to_file(inserted_sql_strs, inserted_sql_filepath)
+    string_sequence_to_file(template_sql_strs, template_sql_filepath)
+
+    returned_sql_filename = "returned_sql.sql"
+    returned_sql_filepath = f"{tmp_path}/{returned_sql_filename}"
+
+    module_under_test.build_sql(template_file=template_sql_filepath,
+                                output_file=returned_sql_filepath,
+                                parameters=parameters)
 
     returned_sql_strs = file_to_string_sequence(returned_sql_filepath)
 

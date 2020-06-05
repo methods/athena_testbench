@@ -41,10 +41,18 @@ def file_to_snippet(filepath: str,
         return [f'{prefix}{line}' for line in lines]
 
 
+def replace_parameters(lines, parameters):
+    output = lines
+    for key in parameters:
+        output = [line.replace(f':{key}:', parameters[key]) for line in output]
+    return output
+
+
 def build_sql(template_file: str,
               output_file: str,
               insert_delimiter: str = '@',
-              suffix_start_chars: Sequence = (',')) -> None:
+              suffix_start_chars: Sequence = (','),
+              parameters: dict = None) -> None:
     """
     Assemble sql script from template_file and write to output_file. The
     template_file can be an absolute path or a path relative to the location
@@ -128,6 +136,9 @@ def build_sql(template_file: str,
 
         if trailing_statement != '':
             _suffix_or_newline(trailing_statement)
+
+    if parameters:
+        output_lines = replace_parameters(output_lines, parameters)
 
     with open(output_file, 'w') as f:
         f.write("\n".join(output_lines))
