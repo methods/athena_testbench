@@ -448,7 +448,7 @@ def test_build_sql_replacing_parameters(tmp_path: pytest.fixture):
         "  x AS i",
         "  y AS j",
         "FROM some_table",
-        "WHERE z = :something:"
+        "WHERE z = '${something}'"
     ]
     inserted_sql_filename = "inserted_sql.sql"
     inserted_sql_filepath = f"{tmp_path}/{inserted_sql_filename}"
@@ -459,7 +459,7 @@ def test_build_sql_replacing_parameters(tmp_path: pytest.fixture):
     ]
     template_sql_filename = "template_sql.sql"
     template_sql_filepath = f"{tmp_path}/{template_sql_filename}"
-    parameters = {'something': "'some value'"}
+    parameters = {'something': "some value"}
 
     expected_sql_strs = [
         "WITH X AS ",

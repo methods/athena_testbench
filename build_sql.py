@@ -43,8 +43,10 @@ def file_to_snippet(filepath: str,
 
 def replace_parameters(lines, parameters):
     output = lines
+    prefix = '${'
+    suffix = '}'
     for key in parameters:
-        output = [line.replace(f':{key}:', parameters[key]) for line in output]
+        output = [line.replace(f'{prefix}{key}{suffix}', parameters[key]) for line in output]
     return output
 
 
