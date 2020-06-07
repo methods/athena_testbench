@@ -9,7 +9,8 @@ FROM (
                 provenance                                                                    AS provenance,
                 has_access_to_essential_supplies                                              AS has_access_to_essential_supplies,
                 submission_time                                                               AS event_datetime,
-                submission_time                                                               AS ingested_datetime
+                submission_time                                                               AS ingested_datetime,
+                provenance                                                                    AS event_code
          FROM all_submissions
        )
        UNION ALL
@@ -18,7 +19,8 @@ FROM (
                 'local authority'                                                             AS provenance,
                 'YES'                                                                         AS has_access_to_essential_supplies,
                 feedback_time                                                                 AS event_datetime,
-                ingested_datetime                                                             AS ingested_datetime
+                ingested_datetime                                                             AS ingested_datetime,
+                feedback_code                                                                 AS event_code
          FROM all_la_feedback
          where feedback_code IN ('W002', 'W003', 'F002', 'D001')
        )
@@ -28,7 +30,8 @@ FROM (
                 'wholesaler'             AS provenance,
                 'YES'                    AS has_access_to_essential_supplies,
                 wholesaler_delivery_date AS event_datetime,
-                ingested_datetime        AS ingested_datetime
+                ingested_datetime        AS ingested_datetime,
+                '3'                      AS event_code
          FROM wholesaler_opt_out_list
        )
      ) AS all_events
