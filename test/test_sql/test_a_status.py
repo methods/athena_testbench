@@ -173,7 +173,8 @@ def registration_event(nhs_number, provenance, has_access_to_essential_supplies,
         'has_access_to_essential_supplies': has_access_to_essential_supplies,
         'event_datetime': event_datetime,
         'ingested_datetime': ingested_datetime,
-        'event_order': event_order
+        'event_order': event_order,
+        'event_code': 'na'
     }
 
 
@@ -185,7 +186,8 @@ def build_timeline_as_table(scenario_builder):
         'has_access_to_essential_supplies': 'TEXT',
         'event_datetime': 'TIMESTAMP',
         'ingested_datetime': 'TIMESTAMP',
-        'event_order': 'NUMERIC'
+        'event_order': 'NUMERIC',
+        'event_code': 'TEXT'
     }
     scenario_builder.build_arbitrary_table("registration_timeline", table_schema)
 
