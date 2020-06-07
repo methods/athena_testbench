@@ -1,4 +1,5 @@
 .pytest_cache/
+built_sql/
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
