@@ -39,7 +39,7 @@ def test_query_detects_changes_that_have_occured(tmp_path: pytest.fixture):
 
         # WHEN
         # we build the registration change between dates for changes between today and 3 days ago
-        query = build_query(tmp_path, 'sql_to_build/registration_change_between_dates_test_stack.sql',
+        query = build_query(tmp_path, 'sql_to_build/registration_change_between_dates/registration_change_between_dates_test_stack.sql',
                             parameters={'from_timestamp': n_days_ago(3), 'to_timestamp': n_days_ago(0)})
         results = presto_transaction(query)
 
@@ -66,7 +66,7 @@ def test_query_ignores_when_no_change_has_occured(tmp_path: pytest.fixture):
 
         # WHEN
         # we build the registration change between dates for changes between today and 3 days ago
-        query = build_query(tmp_path, 'sql_to_build/registration_change_between_dates_test_stack.sql',
+        query = build_query(tmp_path, 'sql_to_build/registration_change_between_dates/registration_change_between_dates_test_stack.sql',
                             parameters={'from_timestamp': n_days_ago(3), 'to_timestamp': n_days_ago(0)})
         results = presto_transaction(query)
 
@@ -91,7 +91,7 @@ def test_query_ignores_when_cancelling_changes_have_occured_in_the_period(tmp_pa
 
         # WHEN
         # we build the registration change between dates for changes between today and 6 days ago
-        query = build_query(tmp_path, 'sql_to_build/registration_change_between_dates_test_stack.sql',
+        query = build_query(tmp_path, 'sql_to_build/registration_change_between_dates/registration_change_between_dates_test_stack.sql',
                             parameters={'from_timestamp': n_days_ago(6), 'to_timestamp': n_days_ago(0)})
         results = presto_transaction(query)
 

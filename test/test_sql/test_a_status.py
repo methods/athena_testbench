@@ -38,7 +38,7 @@ def test_status_records_limit_to_one_per_person(tmp_path: pytest.fixture):
 
         # WHEN
         # we build the registration timeline stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/registration_status_select.sql', parameters={'timestamp': n_days_ago(2)})
+        query = build_query(tmp_path, 'sql_to_build/registration_status/registration_status_select.sql', parameters={'timestamp': n_days_ago(2)})
         results = presto_transaction(query)
 
         # THEN
@@ -63,7 +63,7 @@ def test_status_returns_most_recent(tmp_path: pytest.fixture):
 
         # WHEN
         # we query for the status 7 days ago
-        query = build_query(tmp_path, 'sql_to_build/registration_status_select.sql', parameters={'timestamp': n_days_ago(7)})
+        query = build_query(tmp_path, 'sql_to_build/registration_status/registration_status_select.sql', parameters={'timestamp': n_days_ago(7)})
         results = presto_transaction(query)
 
         # THEN
@@ -90,7 +90,7 @@ def test_status_returns_most_recent_from_multiple(tmp_path: pytest.fixture):
 
         # WHEN
         # we query for the status 7 days ago
-        query = build_query(tmp_path, 'sql_to_build/registration_status_select.sql', parameters={'timestamp': n_days_ago(7)})
+        query = build_query(tmp_path, 'sql_to_build/registration_status/registration_status_select.sql', parameters={'timestamp': n_days_ago(7)})
         results = presto_transaction(query)
 
         # THEN
@@ -117,7 +117,7 @@ def test_status_returns_none_if_no_event_before_time(tmp_path: pytest.fixture):
 
         # WHEN
         # we query for the status 7 days ago
-        query = build_query(tmp_path, 'sql_to_build/registration_status_select.sql', parameters={'timestamp': n_days_ago(30)})
+        query = build_query(tmp_path, 'sql_to_build/registration_status/registration_status_select.sql', parameters={'timestamp': n_days_ago(30)})
         results = presto_transaction(query)
 
         # THEN
@@ -143,7 +143,7 @@ def test_status_returns_one_status_even_if_two_events_are_latest(tmp_path: pytes
 
         # WHEN
         # we query for the status 7 days ago
-        query = build_query(tmp_path, 'sql_to_build/registration_status_select.sql', parameters={'timestamp': n_days_ago(7)})
+        query = build_query(tmp_path, 'sql_to_build/registration_status/registration_status_select.sql', parameters={'timestamp': n_days_ago(7)})
         results = presto_transaction(query)
 
         # THEN

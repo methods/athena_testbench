@@ -56,7 +56,7 @@ def test_ivr_submissions_added_to_the_timeline(tmp_path: pytest.fixture):
 
         # WHEN
         # we build the registration timeline stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/registration_timeline_TEMPLATE.sql')
+        query = build_query(tmp_path, 'sql_to_build/timeline/registration_timeline_TEMPLATE.sql')
         results = presto_transaction(query)
 
         # THEN
@@ -87,7 +87,7 @@ def test_web_submissions_added_to_the_timeline(tmp_path: pytest.fixture):
 
         # WHEN
         # we build the registration timeline stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/registration_timeline_TEMPLATE.sql')
+        query = build_query(tmp_path, 'sql_to_build/timeline/registration_timeline_TEMPLATE.sql')
         results = presto_transaction(query)
 
         # THEN
@@ -119,7 +119,7 @@ def test_la_outcome_deregistration_added_to_the_timeline(tmp_path: pytest.fixtur
 
         # WHEN
         # we build the registration timeline stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/registration_timeline_TEMPLATE.sql')
+        query = build_query(tmp_path, 'sql_to_build/timeline/registration_timeline_TEMPLATE.sql')
         results = presto_transaction(query)
 
         # THEN
@@ -150,7 +150,7 @@ def test_la_outcome_that_isnt_deregistration_not_added_to_the_timeline(tmp_path:
 
         # WHEN
         # we build the registration timeline stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/registration_timeline_TEMPLATE.sql')
+        query = build_query(tmp_path, 'sql_to_build/timeline/registration_timeline_TEMPLATE.sql')
         results = presto_transaction(query)
 
         # THEN
@@ -184,7 +184,7 @@ def test_wholesaler_feedback_is_added_to_the_timeline(tmp_path: pytest.fixture):
 
         # WHEN
         # we build the registration timeline stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/registration_timeline_TEMPLATE.sql')
+        query = build_query(tmp_path, 'sql_to_build/timeline/registration_timeline_TEMPLATE.sql')
         results = presto_transaction(query)
 
         # THEN
@@ -218,7 +218,7 @@ def test_wholesaler_feedback_that_is_not_code_3_is_not_added_to_the_timeline(tmp
 
         # WHEN
         # we build the registration timeline stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/registration_timeline_TEMPLATE.sql')
+        query = build_query(tmp_path, 'sql_to_build/timeline/registration_timeline_TEMPLATE.sql')
         results = presto_transaction(query)
 
         # THEN
