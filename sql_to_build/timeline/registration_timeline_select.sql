@@ -22,7 +22,7 @@ FROM (
                 ingested_datetime                                                             AS ingested_datetime,
                 feedback_code                                                                 AS event_code
          FROM all_la_feedback
-         where feedback_code IN ('W002', 'W003', 'F002', 'D001')
+         where feedback_code IN ('W003', 'W004', 'F002', 'D001')
        )
        UNION ALL
        (

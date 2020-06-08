@@ -112,8 +112,8 @@ def test_la_outcome_deregistration_added_to_the_timeline(tmp_path: pytest.fixtur
             "raw_la_outcomes_staging", [
                 generate_raw_la_outcome(nhs_number=1, ref_id=HEX_ID_1, code='F002', event_date=n_days_ago(10)),
                 generate_raw_la_outcome(nhs_number=1, ref_id=HEX_ID_1, code='D001', event_date=n_days_ago(5)),
-                generate_raw_la_outcome(nhs_number=1, ref_id=HEX_ID_1, code='W002', event_date=n_days_ago(1)),
                 generate_raw_la_outcome(nhs_number=1, ref_id=HEX_ID_1, code='W003', event_date=n_days_ago(1)),
+                generate_raw_la_outcome(nhs_number=1, ref_id=HEX_ID_1, code='W004', event_date=n_days_ago(1)),
             ]
         )
 
