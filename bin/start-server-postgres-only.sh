@@ -1,20 +1,20 @@
 #!/bin/bash
 
 # vars
-logfile=${PWD}/server_logs.log
-server_started_msg="======== SERVER STARTED ========"
+logfile=${PWD}/postgres_server_logs.log
+server_started_msg=" database system is ready to accept connections"
 max_time_to_wait_for_server_to_start=30
 
-# start presto server and docker network
+# start postgres container
 echo "Started test server, server logs found in ${logfile}"
-docker-compose up &>${logfile} &
+docker-compose up postgresql &>${logfile} &
 server_pid=$!
 
-# exit success if server_started_msg found in logs
+# exit success if server_started_msg found TWICE in logs
 exit_if_server_started () {
-    if [ $(cat ${logfile} | grep -c "${server_started_msg}") -gt 0 ]
+    if [ $(cat ${logfile} | grep -c "${server_started_msg}") -eq 2 ]
     then
-        echo "Server running!"
+        echo "Postgres server running!"
         exit 0
     fi
 }
@@ -23,7 +23,7 @@ exit_if_server_started () {
 exit_if_server_crashed () {
     if ! kill -0 $server_pid > /dev/null 2>&1
     then
-        echo "Server failed to start!"
+        echo "Postgres server failed to start!"
         exit 1
     fi
 }
@@ -39,5 +39,5 @@ do
     let i=i+1
 done
 
-echo "Could not verify server had started within ${max_time_to_wait_for_server_to_start} seconds"
+echo "Could not verify postgres server had started within ${max_time_to_wait_for_server_to_start} seconds"
 echo "Check logs at ${logfile} for error messages"

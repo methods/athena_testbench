@@ -13,7 +13,11 @@ So you only have to `bin/start-server.sh` and use the [Presto CLI](https://prest
 
 NB `bin/start-server.sh` runs the server as a background process logging to `server_logs.log`. To see stdout and stderror, put a watch on that file.
 
+To start the postgres server only (useful for tests), run `bin/start-server-postgres-only.sh`.
+
 To stop the server, please use `bin/stop-server.sh`. This will safely bring down the presto network (keyboard interrupted the server does not!)
+
+NB - all scripts in bin block until either the server has started or crashed, or the server has been stopped.
 
 ```
 ./presto --server localhost:8080 --catalog postgresql --schema public
