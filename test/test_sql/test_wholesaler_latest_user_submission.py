@@ -4,7 +4,7 @@ import pytest
 from faker import Faker
 
 from build_sql import build_sql
-from utils.ScenarioBuilder import ScenarioBuilder
+from utils.ScenarioBuilder import scenario_builder
 from utils.connections import presto_transaction, pg_connect
 from utils.postcodes import PostcodeGenerator
 from utils.random_utils import n_days_ago, random_covid_date, random_date_of_birth
@@ -31,386 +31,382 @@ we also need datasources for nhs records and the latest_address view
 
 # ============= TEST RECORDS ARE JOINING CORRECTLY ================
 
-def test_submissions_feed_through_to_final_query(tmp_path: pytest.fixture):
-    with pg_connect() as con:
-        scenario_builder = ScenarioBuilder(con)
+def test_submissions_feed_through_to_final_query(tmp_path: pytest.fixture, scenario_builder: pytest.fixture):
+    scenario_builder.reset()
 
-        # GIVEN
-        # a simple situation where users have registered on the web or ivr
-        build_and_reset_data_sources(scenario_builder)
+    # GIVEN
+    # a simple situation where users have registered on the web or ivr
+    build_and_reset_data_sources(scenario_builder)
 
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_submission", [
-                latest_submission_row('1', 'NO', n_days_ago(n=1)),
-                latest_submission_row('2', 'NO', n_days_ago(n=1)),
-                latest_submission_row('3', 'NO', n_days_ago(n=1)),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "nhs_clean_staging", [
-                nhs_clean_staging_row(1),
-                nhs_clean_staging_row(2),
-                nhs_clean_staging_row(3),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "clean_latest_address_staging", [
-                clean_latest_address_row(1),
-                clean_latest_address_row(2),
-                clean_latest_address_row(3)
-            ]
-        )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_submission", [
+            latest_submission_row('1', 'NO', n_days_ago(n=1)),
+            latest_submission_row('2', 'NO', n_days_ago(n=1)),
+            latest_submission_row('3', 'NO', n_days_ago(n=1)),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "nhs_clean_staging", [
+            nhs_clean_staging_row(1),
+            nhs_clean_staging_row(2),
+            nhs_clean_staging_row(3),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "clean_latest_address_staging", [
+            clean_latest_address_row(1),
+            clean_latest_address_row(2),
+            clean_latest_address_row(3)
+        ]
+    )
 
-        # WHEN
-        # we build the latest feedback deregister stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
-        results = presto_transaction(query)
+    # WHEN
+    # we build the latest feedback deregister stack and run it in presto
+    query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
+    results = presto_transaction(query)
 
-        # THEN
-        # there are 3 results returned
-        assert len(results) == 3
-
-
-def test_users_that_deregister_themselves_are_marked_as_having_access_to_food(tmp_path: pytest.fixture):
-    with pg_connect() as con:
-        scenario_builder = ScenarioBuilder(con)
-
-        # GIVEN
-        # a simple situation where users have registered on the web or ivr
-        build_and_reset_data_sources(scenario_builder)
-
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_submission", [
-                latest_submission_row('1', 'YES', n_days_ago(n=1)),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "nhs_clean_staging", [
-                nhs_clean_staging_row(1)
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "clean_latest_address_staging", [
-                clean_latest_address_row(1),
-            ]
-        )
-
-        # WHEN
-        # we build the latest feedback deregister stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
-        results = presto_transaction(query)
-
-        # THEN
-        # there are 3 results returned
-        assert len(results) == 1
-        assert results[0][HAS_ACCESS] == 'YES'
+    # THEN
+    # there are 3 results returned
+    assert len(results) == 3
 
 
-def test_users_that_are_deregistered_by_la_are_marked_as_having_access_to_food(tmp_path: pytest.fixture):
-    with pg_connect() as con:
-        scenario_builder = ScenarioBuilder(con)
+def test_users_that_deregister_themselves_are_marked_as_having_access_to_food(tmp_path: pytest.fixture,
+                                                                              scenario_builder: pytest.fixture):
+    scenario_builder.reset()
 
-        # GIVEN
-        # a user who registered for food and has been deregistered by the la
-        build_and_reset_data_sources(scenario_builder)
+    # GIVEN
+    # a simple situation where users have registered on the web or ivr
+    build_and_reset_data_sources(scenario_builder)
 
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_submission", [
-                latest_submission_row('1', 'NO', n_days_ago(n=10)),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "nhs_clean_staging", [
-                nhs_clean_staging_row(1)
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "clean_latest_address_staging", [
-                clean_latest_address_row(1),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_la_feedback_to_stop_boxes", [
-                latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(5), '')
-            ]
-        )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_submission", [
+            latest_submission_row('1', 'YES', n_days_ago(n=1)),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "nhs_clean_staging", [
+            nhs_clean_staging_row(1)
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "clean_latest_address_staging", [
+            clean_latest_address_row(1),
+        ]
+    )
 
-        # WHEN
-        # we build the latest feedback deregister stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
-        results = presto_transaction(query)
+    # WHEN
+    # we build the latest feedback deregister stack and run it in presto
+    query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
+    results = presto_transaction(query)
 
-        # THEN
-        # there are 3 results returned
-        assert len(results) == 1
-        assert results[0][HAS_ACCESS] == 'YES'
+    # THEN
+    # there are 3 results returned
+    assert len(results) == 1
+    assert results[0][HAS_ACCESS] == 'YES'
 
 
-def test_users_that_are_deregistered_by_la_then_reregister_marked_as_needing_food(tmp_path: pytest.fixture):
-    with pg_connect() as con:
-        scenario_builder = ScenarioBuilder(con)
+def test_users_that_are_deregistered_by_la_are_marked_as_having_access_to_food(tmp_path: pytest.fixture,
+                                                                               scenario_builder: pytest.fixture):
+    scenario_builder.reset()
 
-        # GIVEN
-        # a user who registered for food and has been deregistered by the la
-        build_and_reset_data_sources(scenario_builder)
+    # GIVEN
+    # a user who registered for food and has been deregistered by the la
+    build_and_reset_data_sources(scenario_builder)
 
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "nhs_clean_staging", [
-                nhs_clean_staging_row(1)
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "clean_latest_address_staging", [
-                clean_latest_address_row(1),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_la_feedback_to_stop_boxes", [
-                latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(5), '')
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_submission", [
-                latest_submission_row('1', 'NO', n_days_ago(n=1)),
-            ]
-        )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_submission", [
+            latest_submission_row('1', 'NO', n_days_ago(n=10)),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "nhs_clean_staging", [
+            nhs_clean_staging_row(1)
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "clean_latest_address_staging", [
+            clean_latest_address_row(1),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_la_feedback_to_stop_boxes", [
+            latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(5), '')
+        ]
+    )
 
-        # WHEN
-        # we build the latest feedback deregister stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
-        results = presto_transaction(query)
+    # WHEN
+    # we build the latest feedback deregister stack and run it in presto
+    query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
+    results = presto_transaction(query)
 
-        # THEN
-        # there are 3 results returned
-        assert len(results) == 1
-        assert results[0][HAS_ACCESS] == 'NO'
-
-
-def test_users_that_are_deregistered_by_wholesaler_are_marked_as_having_access_to_food(tmp_path: pytest.fixture):
-    with pg_connect() as con:
-        scenario_builder = ScenarioBuilder(con)
-
-        # GIVEN
-        # a user who registered for food and has been deregistered by the wholesaler
-        build_and_reset_data_sources(scenario_builder)
-
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_submission", [
-                latest_submission_row('1', 'NO', n_days_ago(n=10)),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "clean_latest_address_staging", [
-                clean_latest_address_row(1),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "nhs_clean_staging", [
-                nhs_clean_staging_row(1)
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_wholesaler_opt_out", [
-                latest_wholesaler_opt_out_row(HEX_ID_1, n_days_ago(1), '3', '')
-            ]
-        )
-
-        # WHEN
-        # we build the latest feedback deregister stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
-        results = presto_transaction(query)
-
-        # THEN
-        # the user is marked as having access to food
-        assert len(results) == 1
-        assert results[0][HAS_ACCESS] == 'YES'
+    # THEN
+    # there are 3 results returned
+    assert len(results) == 1
+    assert results[0][HAS_ACCESS] == 'YES'
 
 
-def test_users_that_are_deregistered_by_wholesaler_then_reregister_are_marked_as_needing_food(tmp_path: pytest.fixture):
-    with pg_connect() as con:
-        scenario_builder = ScenarioBuilder(con)
+def test_users_that_are_deregistered_by_la_then_reregister_marked_as_needing_food(tmp_path: pytest.fixture,
+                                                                                  scenario_builder: pytest.fixture):
+    scenario_builder.reset()
 
-        # GIVEN
-        # a user who registered for food after being deregistered by the wholesaler
-        build_and_reset_data_sources(scenario_builder)
+    # GIVEN
+    # a user who registered for food and has been deregistered by the la
+    build_and_reset_data_sources(scenario_builder)
 
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "nhs_clean_staging", [
-                nhs_clean_staging_row(1)
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "clean_latest_address_staging", [
-                clean_latest_address_row(1),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_wholesaler_opt_out", [
-                latest_wholesaler_opt_out_row(HEX_ID_1, n_days_ago(5), '3', '')
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_submission", [
-                latest_submission_row('1', 'NO', n_days_ago(n=1)),
-            ]
-        )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "nhs_clean_staging", [
+            nhs_clean_staging_row(1)
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "clean_latest_address_staging", [
+            clean_latest_address_row(1),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_la_feedback_to_stop_boxes", [
+            latest_la_feedback_opt_out_row('1', 'F002', n_days_ago(5), '')
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_submission", [
+            latest_submission_row('1', 'NO', n_days_ago(n=1)),
+        ]
+    )
 
-        # WHEN
-        # we build the latest feedback user submission stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
-        results = presto_transaction(query)
+    # WHEN
+    # we build the latest feedback deregister stack and run it in presto
+    query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
+    results = presto_transaction(query)
 
-        # THEN
-        # the user is marked as needing food
-        assert len(results) == 1
-        assert results[0][HAS_ACCESS] == 'NO'
-
-
-def test_users_that_are_deregistered_have_pii_surpressed(tmp_path: pytest.fixture):
-    with pg_connect() as con:
-        scenario_builder = ScenarioBuilder(con)
-
-        # GIVEN
-        # a user who has deregistered for food
-        build_and_reset_data_sources(scenario_builder)
-
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "nhs_clean_staging", [
-                nhs_clean_staging_row(1)
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "clean_latest_address_staging", [
-                clean_latest_address_row(1),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_submission", [
-                latest_submission_row('1', 'YES', n_days_ago(n=1)),
-            ]
-        )
-
-        # WHEN
-        # we build the latest feedback user submission stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
-        results = presto_transaction(query)
-
-        # THEN
-        # the user has most of their data surpressed
-        assert len(results) == 1
-        assert results[0][LAST_NAME] == ''
-        assert results[0][POSTCODE] == ''
-        assert results[0][MOBILE] == ''
+    # THEN
+    # there are 3 results returned
+    assert len(results) == 1
+    assert results[0][HAS_ACCESS] == 'NO'
 
 
-def test_users_that_are_deceased_have_pii_surpressed_and_marked_as_not_needing_supplies(tmp_path: pytest.fixture):
-    with pg_connect() as con:
-        scenario_builder = ScenarioBuilder(con)
+def test_users_that_are_deregistered_by_wholesaler_are_marked_as_having_access_to_food(tmp_path: pytest.fixture,
+                                                                                       scenario_builder: pytest.fixture):
+    scenario_builder.reset()
 
-        # GIVEN
-        # a user who has registered for food but is now deceased
-        build_and_reset_data_sources(scenario_builder)
+    # GIVEN
+    # a user who registered for food and has been deregistered by the wholesaler
+    build_and_reset_data_sources(scenario_builder)
 
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "nhs_clean_staging", [
-                nhs_clean_staging_row(1, nhs_deceased='1')
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "clean_latest_address_staging", [
-                clean_latest_address_row(1),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_submission", [
-                latest_submission_row('1', 'YES', n_days_ago(n=10)),
-            ]
-        )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_submission", [
+            latest_submission_row('1', 'NO', n_days_ago(n=10)),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "clean_latest_address_staging", [
+            clean_latest_address_row(1),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "nhs_clean_staging", [
+            nhs_clean_staging_row(1)
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_wholesaler_opt_out", [
+            latest_wholesaler_opt_out_row(HEX_ID_1, n_days_ago(1), '3', '')
+        ]
+    )
 
-        # WHEN
-        # we build the latest feedback user submission stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
-        results = presto_transaction(query)
+    # WHEN
+    # we build the latest feedback deregister stack and run it in presto
+    query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
+    results = presto_transaction(query)
 
-        # THEN
-        # the user has most of their data surpressed
-        assert len(results) == 1
-        assert results[0][HAS_ACCESS] == 'YES'
-        assert results[0][LAST_NAME] == ''
-        assert results[0][POSTCODE] == ''
-        assert results[0][MOBILE] == ''
-
-
-def test_users_that_are_registered_have_pii_columns_available(tmp_path: pytest.fixture):
-    with pg_connect() as con:
-        scenario_builder = ScenarioBuilder(con)
-
-        # GIVEN
-        # a user who has registered for food
-        build_and_reset_data_sources(scenario_builder)
-
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "nhs_clean_staging", [
-                nhs_clean_staging_row(1)
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "clean_latest_address_staging", [
-                clean_latest_address_row(1),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_submission", [
-                latest_submission_row('1', 'NO', n_days_ago(n=1)),
-            ]
-        )
-
-        # WHEN
-        # we build the latest feedback user submission stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
-        results = presto_transaction(query)
-
-        # THEN
-        # the user has pii data available
-        assert len(results) == 1
-        assert results[0][LAST_NAME] != ''
-        assert results[0][POSTCODE] != ''
-        assert results[0][MOBILE] != ''
+    # THEN
+    # the user is marked as having access to food
+    assert len(results) == 1
+    assert results[0][HAS_ACCESS] == 'YES'
 
 
-def test_address_details_are_pulled_from_latest_address_not_nhs_record(tmp_path: pytest.fixture):
-    with pg_connect() as con:
-        scenario_builder = ScenarioBuilder(con)
+def test_users_that_are_deregistered_by_wholesaler_then_reregister_are_marked_as_needing_food(tmp_path: pytest.fixture,
+                                                                                              scenario_builder: pytest.fixture):
+    scenario_builder.reset()
 
-        # GIVEN
-        # a user who has registered for food and has a latest address postcode that differs from their nhs postcode
-        build_and_reset_data_sources(scenario_builder)
+    # GIVEN
+    # a user who registered for food after being deregistered by the wholesaler
+    build_and_reset_data_sources(scenario_builder)
 
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "nhs_clean_staging", [
-                nhs_clean_staging_row(1, postcode="nhs postcode")
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "clean_latest_address_staging", [
-                clean_latest_address_row(1, postcode="latest address postcode"),
-            ]
-        )
-        scenario_builder.insert_multiple_into_arbitrary_table(
-            "latest_submission", [
-                latest_submission_row('1', 'NO', n_days_ago(n=1)),
-            ]
-        )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "nhs_clean_staging", [
+            nhs_clean_staging_row(1)
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "clean_latest_address_staging", [
+            clean_latest_address_row(1),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_wholesaler_opt_out", [
+            latest_wholesaler_opt_out_row(HEX_ID_1, n_days_ago(5), '3', '')
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_submission", [
+            latest_submission_row('1', 'NO', n_days_ago(n=1)),
+        ]
+    )
 
-        # WHEN
-        # we build the latest feedback user submission stack and run it in presto
-        query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
-        results = presto_transaction(query)
+    # WHEN
+    # we build the latest feedback user submission stack and run it in presto
+    query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
+    results = presto_transaction(query)
 
-        # THEN
-        # the latest address postcode is what is pulled through on the record
-        assert len(results) == 1
-        assert results[0][POSTCODE] == 'latest address postcode'
+    # THEN
+    # the user is marked as needing food
+    assert len(results) == 1
+    assert results[0][HAS_ACCESS] == 'NO'
+
+
+def test_users_that_are_deregistered_have_pii_surpressed(tmp_path: pytest.fixture, scenario_builder: pytest.fixture):
+    scenario_builder.reset()
+
+    # GIVEN
+    # a user who has deregistered for food
+    build_and_reset_data_sources(scenario_builder)
+
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "nhs_clean_staging", [
+            nhs_clean_staging_row(1)
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "clean_latest_address_staging", [
+            clean_latest_address_row(1),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_submission", [
+            latest_submission_row('1', 'YES', n_days_ago(n=1)),
+        ]
+    )
+
+    # WHEN
+    # we build the latest feedback user submission stack and run it in presto
+    query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
+    results = presto_transaction(query)
+
+    # THEN
+    # the user has most of their data surpressed
+    assert len(results) == 1
+    assert results[0][LAST_NAME] == ''
+    assert results[0][POSTCODE] == ''
+    assert results[0][MOBILE] == ''
+
+
+def test_users_that_are_deceased_have_pii_surpressed_and_marked_as_not_needing_supplies(tmp_path: pytest.fixture,
+                                                                                        scenario_builder: pytest.fixture):
+    scenario_builder.reset()
+
+    # GIVEN
+    # a user who has registered for food but is now deceased
+    build_and_reset_data_sources(scenario_builder)
+
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "nhs_clean_staging", [
+            nhs_clean_staging_row(1, nhs_deceased='1')
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "clean_latest_address_staging", [
+            clean_latest_address_row(1),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_submission", [
+            latest_submission_row('1', 'YES', n_days_ago(n=10)),
+        ]
+    )
+
+    # WHEN
+    # we build the latest feedback user submission stack and run it in presto
+    query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
+    results = presto_transaction(query)
+
+    # THEN
+    # the user has most of their data surpressed
+    assert len(results) == 1
+    assert results[0][HAS_ACCESS] == 'YES'
+    assert results[0][LAST_NAME] == ''
+    assert results[0][POSTCODE] == ''
+    assert results[0][MOBILE] == ''
+
+
+def test_users_that_are_registered_have_pii_columns_available(tmp_path: pytest.fixture, scenario_builder: pytest.fixture):
+    scenario_builder.reset()
+
+    # GIVEN
+    # a user who has registered for food
+    build_and_reset_data_sources(scenario_builder)
+
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "nhs_clean_staging", [
+            nhs_clean_staging_row(1)
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "clean_latest_address_staging", [
+            clean_latest_address_row(1),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_submission", [
+            latest_submission_row('1', 'NO', n_days_ago(n=1)),
+        ]
+    )
+
+    # WHEN
+    # we build the latest feedback user submission stack and run it in presto
+    query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
+    results = presto_transaction(query)
+
+    # THEN
+    # the user has pii data available
+    assert len(results) == 1
+    assert results[0][LAST_NAME] != ''
+    assert results[0][POSTCODE] != ''
+    assert results[0][MOBILE] != ''
+
+
+def test_address_details_are_pulled_from_latest_address_not_nhs_record(tmp_path: pytest.fixture, scenario_builder: pytest.fixture):
+    scenario_builder.reset()
+
+    # GIVEN
+    # a user who has registered for food and has a latest address postcode that differs from their nhs postcode
+    build_and_reset_data_sources(scenario_builder)
+
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "nhs_clean_staging", [
+            nhs_clean_staging_row(1, postcode="nhs postcode")
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "clean_latest_address_staging", [
+            clean_latest_address_row(1, postcode="latest address postcode"),
+        ]
+    )
+    scenario_builder.insert_multiple_into_arbitrary_table(
+        "latest_submission", [
+            latest_submission_row('1', 'NO', n_days_ago(n=1)),
+        ]
+    )
+
+    # WHEN
+    # we build the latest feedback user submission stack and run it in presto
+    query = build_query(tmp_path, 'sql_to_build/wholesaler_latest_user_submission_test_stack_TEMPLATE.sql')
+    results = presto_transaction(query)
+
+    # THEN
+    # the latest address postcode is what is pulled through on the record
+    assert len(results) == 1
+    assert results[0][POSTCODE] == 'latest address postcode'
 
 # ============= END TESTS ================
 

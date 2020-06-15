@@ -23,23 +23,27 @@ def presto_connect():
     )
 
 
-def pg_transaction(sql_str: str, values: Sequence or None = None) -> list:
-    with pg_connect() as con:
-        with con.cursor() as cur:
-            if values:
-                cur.execute(sql_str, values)
-            else:
-                cur.execute(sql_str, values)
-            if cur.description is not None:
-                return cur.fetchall()
-            con.commit()
-    return []
+def pg_transaction(sql_str: str, values: Sequence or None = None, con: pg.Connection or None = None) -> list:
+    results = []
+    close_connection = not bool(con)
+    with con.cursor() as cur:
+        if values:
+            cur.execute(sql_str, values)
+        else:
+            cur.execute(sql_str, values)
+        if cur.description is not None:
+            results = cur.fetchall()
+    con.commit()
+    if close_connection:
+        con.close()
+    return results
 
 
-def presto_transaction(sql_str: str) -> list:
-    con = presto_connect()
+def presto_transaction(sql_str: str, con: prestodb.dbapi.Connection or None = None) -> list:
+    con = con or presto_connect()
     cur = con.cursor()
     cur.execute(sql_str)
     results = cur.fetchall()
-    # con.commit()
+    cur.close()
+    con.commit()
     return results

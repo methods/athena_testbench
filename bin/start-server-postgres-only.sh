@@ -6,7 +6,7 @@ server_started_msg=" database system is ready to accept connections"
 max_time_to_wait_for_server_to_start=30
 
 # start postgres container
-echo "Started test server, server logs found in ${logfile}"
+echo "Starting test postgres server, server logs found in ${logfile}"
 docker-compose up postgresql &>${logfile} &
 server_pid=$!
 

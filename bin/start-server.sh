@@ -6,7 +6,7 @@ server_started_msg="======== SERVER STARTED ========"
 max_time_to_wait_for_server_to_start=30
 
 # start presto server and docker network
-echo "Started test server, server logs found in ${logfile}"
+echo "Starting test server, server logs found in ${logfile}"
 docker-compose up &>${logfile} &
 server_pid=$!
 
