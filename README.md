@@ -9,7 +9,11 @@ This repo comes with default config to spin up:
 - presto
 - postgresql and its connector
 
-So you only have to `docker-compose up` and use the [Presto CLI](https://prestodb.io/docs/current/installation/cli.html) to access
+So you only have to `bin/start-server.sh` and use the [Presto CLI](https://prestodb.io/docs/current/installation/cli.html) to access. s
+
+NB `bin/start-server.sh` runs the server as a background process logging to `server_logs.log`. To see stdout and stderror, put a watch on that file.
+
+To stop the server, please use `bin/stop-server.sh`. This will safely bring down the presto network (keyboard interrupted the server does not!)
 
 ```
 ./presto --server localhost:8080 --catalog postgresql --schema public
